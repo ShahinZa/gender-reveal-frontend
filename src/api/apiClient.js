@@ -4,7 +4,7 @@
  * Single Responsibility: HTTP communication only
  */
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'https://gender-production.up.railway.app';
 
 class ApiError extends Error {
   constructor(message, status, data) {
