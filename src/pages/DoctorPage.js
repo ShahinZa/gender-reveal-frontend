@@ -92,9 +92,7 @@ function DoctorPage() {
             The gender has already been selected and locked.
             It cannot be changed.
           </Card.Subtitle>
-          <Button variant="secondary" fullWidth onClick={() => window.close()}>
-            Close This Page
-          </Button>
+          <p className="done-text">You can close this tab now</p>
         </Card>
       </div>
     );
@@ -197,9 +195,7 @@ function DoctorPage() {
             The gender has been securely encrypted and saved.
             The parents will discover the surprise at their reveal party!
           </Card.Subtitle>
-          <Button variant="secondary" fullWidth onClick={() => window.close()}>
-            Close This Page
-          </Button>
+          <p className="done-text">You can close this tab now</p>
         </Card>
       </div>
     );
