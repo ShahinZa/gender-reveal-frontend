@@ -28,7 +28,8 @@ function Dashboard() {
   const copyLink = (type) => {
     const code = type === 'doctor' ? user.doctorCode : user.revealCode;
     const baseUrl = window.location.origin;
-    const link = `${baseUrl}/${type}/${code}`;
+    const path = type === 'doctor' ? 'secret' : 'reveal';
+    const link = `${baseUrl}/${path}/${code}`;
     copyToClipboard(link, type);
   };
 
@@ -89,7 +90,7 @@ function Dashboard() {
             </div>
             <button
               className="text-white/60 hover:text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-white/10 transition-all"
-              onClick={logout}
+              onClick={() => { logout(); navigate('/'); }}
             >
               Sign Out
             </button>
@@ -128,7 +129,12 @@ function Dashboard() {
               <p className="text-white/60 text-sm mb-4">
                 Share with whoever knows the gender
               </p>
-              <div className="bg-black/20 rounded-xl px-4 py-3 mb-4 text-center">
+              <div
+                className={`bg-black/20 rounded-xl px-4 py-3 mb-4 text-center transition-all ${
+                  !status?.isSet ? 'cursor-pointer hover:bg-black/30' : ''
+                }`}
+                onClick={() => !status?.isSet && copyLink('doctor')}
+              >
                 <code className="text-white/90 font-mono text-lg tracking-wider">
                   {user.doctorCode}
                 </code>
@@ -174,7 +180,10 @@ function Dashboard() {
               <p className="text-white/60 text-sm mb-4">
                 Use this at your reveal party
               </p>
-              <div className="bg-black/20 rounded-xl px-4 py-3 mb-4 text-center">
+              <div
+                className="bg-black/20 rounded-xl px-4 py-3 mb-4 text-center cursor-pointer hover:bg-black/30 transition-all"
+                onClick={() => copyLink('reveal')}
+              >
                 <code className="text-white/90 font-mono text-lg tracking-wider">
                   {user.revealCode}
                 </code>
@@ -203,13 +212,22 @@ function Dashboard() {
           </div>
 
           {/* Quick Action */}
-          {status?.isSet && !status?.isRevealed && (
+          {status?.isSet ? (
             <div className="mb-8">
               <button
                 className="w-full py-4 rounded-full font-semibold bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 hover:shadow-xl hover:shadow-amber-400/30 transition-all text-lg hover:scale-[1.02]"
                 onClick={() => navigate(`/reveal/${user.revealCode}`)}
               >
                 Go to Reveal Page
+              </button>
+            </div>
+          ) : (
+            <div className="mb-8">
+              <button
+                className="w-full py-4 rounded-full font-semibold bg-white text-slate-900 hover:bg-white/90 hover:shadow-xl hover:shadow-white/20 transition-all text-lg hover:scale-[1.02]"
+                onClick={() => window.open(`${window.location.origin}/secret/${user.doctorCode}`, '_blank')}
+              >
+                Open Secret Keeper Page
               </button>
             </div>
           )}
