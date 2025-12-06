@@ -18,7 +18,7 @@ function RevealPage() {
   const [loading, setLoading] = useState(false);
   const [gender, setGender] = useState(null);
 
-  const { playDrumroll, stopAudio } = useAudio();
+  const { playDrumroll, playCelebration, stopAudio } = useAudio();
 
   const onCountdownComplete = useCallback(() => {
     setStep('opening');
@@ -73,10 +73,15 @@ function RevealPage() {
     }
   };
 
-  const triggerConfetti = (revealedGender) => {
+  const triggerConfetti = (revealedGender, withSound = true) => {
     const colors = revealedGender === 'boy'
       ? ['#93c5fd', '#60a5fa', '#3b82f6', '#2563eb']
       : ['#f9a8d4', '#f472b6', '#ec4899', '#db2777'];
+
+    // Play celebration sound
+    if (withSound) {
+      playCelebration();
+    }
 
     confetti({
       particleCount: 150,

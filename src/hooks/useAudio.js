@@ -152,8 +152,168 @@ const useAudio = () => {
     }
   }, []);
 
+  const playCelebration = useCallback(() => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+
+      const ctx = new AudioContext();
+
+      // Party popper / explosion sound
+      const createPop = (time, pitch = 1) => {
+        // Noise burst for pop
+        const bufferSize = ctx.sampleRate * 0.15;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const noiseGain = ctx.createGain();
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.value = 1000 * pitch;
+        noiseFilter.Q.value = 0.5;
+
+        noiseGain.gain.setValueAtTime(0.4, time);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        noise.start(time);
+
+        // Tonal pop
+        const pop = ctx.createOscillator();
+        const popGain = ctx.createGain();
+        pop.type = 'sine';
+        pop.frequency.setValueAtTime(600 * pitch, time);
+        pop.frequency.exponentialRampToValueAtTime(100, time + 0.1);
+        popGain.gain.setValueAtTime(0.3, time);
+        popGain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+        pop.connect(popGain);
+        popGain.connect(ctx.destination);
+        pop.start(time);
+        pop.stop(time + 0.1);
+      };
+
+      // Fanfare / celebration melody
+      const playFanfare = (startTime) => {
+        const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+        const durations = [0.15, 0.15, 0.15, 0.3, 0.15, 0.4];
+
+        let time = startTime;
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'square';
+          osc.frequency.value = freq;
+          osc2.type = 'sine';
+          osc2.frequency.value = freq;
+
+          gain.gain.setValueAtTime(0.15, time);
+          gain.gain.setValueAtTime(0.15, time + durations[i] * 0.8);
+          gain.gain.exponentialRampToValueAtTime(0.01, time + durations[i]);
+
+          osc.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(time);
+          osc2.start(time);
+          osc.stop(time + durations[i]);
+          osc2.stop(time + durations[i]);
+
+          time += durations[i];
+        });
+      };
+
+      // Sparkle / twinkle sounds
+      const playSparkles = (startTime) => {
+        for (let i = 0; i < 15; i++) {
+          const time = startTime + i * 0.1 + Math.random() * 0.05;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(2000 + Math.random() * 2000, time);
+          osc.frequency.exponentialRampToValueAtTime(1000 + Math.random() * 1000, time + 0.1);
+
+          gain.gain.setValueAtTime(0.08, time);
+          gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(time);
+          osc.stop(time + 0.15);
+        }
+      };
+
+      // Cheering crowd simulation
+      const playCrowd = (startTime) => {
+        const bufferSize = ctx.sampleRate * 2;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+          const envelope = Math.sin(Math.PI * i / bufferSize);
+          data[i] = (Math.random() * 2 - 1) * envelope * 0.3;
+        }
+
+        const crowd = ctx.createBufferSource();
+        crowd.buffer = buffer;
+
+        const crowdFilter = ctx.createBiquadFilter();
+        crowdFilter.type = 'bandpass';
+        crowdFilter.frequency.value = 800;
+        crowdFilter.Q.value = 0.3;
+
+        const crowdGain = ctx.createGain();
+        crowdGain.gain.setValueAtTime(0.2, startTime);
+        crowdGain.gain.linearRampToValueAtTime(0.3, startTime + 0.5);
+        crowdGain.gain.linearRampToValueAtTime(0.1, startTime + 1.5);
+        crowdGain.gain.exponentialRampToValueAtTime(0.01, startTime + 2);
+
+        crowd.connect(crowdFilter);
+        crowdFilter.connect(crowdGain);
+        crowdGain.connect(ctx.destination);
+        crowd.start(startTime);
+      };
+
+      const now = ctx.currentTime;
+
+      // Multiple pops at different times
+      createPop(now, 1);
+      createPop(now + 0.1, 1.2);
+      createPop(now + 0.2, 0.8);
+      createPop(now + 0.35, 1.1);
+
+      // Fanfare after pops
+      playFanfare(now + 0.3);
+
+      // Sparkles throughout
+      playSparkles(now + 0.2);
+
+      // Crowd cheering
+      playCrowd(now + 0.1);
+
+      // Close context after sounds finish
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 3000);
+
+    } catch (error) {
+      console.log('Audio not supported');
+    }
+  }, []);
+
   return {
     playDrumroll,
+    playCelebration,
     stopAudio,
   };
 };
