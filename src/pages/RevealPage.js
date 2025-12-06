@@ -230,7 +230,10 @@ function RevealPage() {
           </h1>
 
           <div className="celebration">
-            {['🎉', '✨', '💖', '🎊', '⭐'].map((emoji, i) => (
+            {(gender === 'boy'
+              ? ['💙', '⭐', '🩵', '✨', '💎']
+              : ['💗', '⭐', '🩷', '✨', '💖']
+            ).map((emoji, i) => (
               <span key={i} style={{ animationDelay: `${i * 0.1}s` }}>{emoji}</span>
             ))}
           </div>
