@@ -6,6 +6,13 @@ function Dashboard() {
   const navigate = useNavigate();
   const { user, status, logout, isAuthenticated, loading, refreshStatus } = useAuth();
   const [copied, setCopied] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshStatus();
+    setTimeout(() => setRefreshing(false), 500);
+  };
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -104,12 +111,36 @@ function Dashboard() {
 
           {/* Status Card */}
           <div className={`bg-gradient-to-r ${statusConfig.bgClass} backdrop-blur-xl rounded-2xl border ${statusConfig.borderClass} p-6 mb-8`}>
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">{statusConfig.icon}</div>
-              <div>
-                <p className="text-white/60 text-sm">Status</p>
-                <p className="text-white font-semibold text-lg">{statusConfig.text}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="text-4xl">{statusConfig.icon}</div>
+                <div>
+                  <p className="text-white/60 text-sm">Status</p>
+                  <p className="text-white font-semibold text-lg">{statusConfig.text}</p>
+                </div>
               </div>
+              {!status?.isSet && (
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="p-2 rounded-full hover:bg-white/10 transition-all disabled:opacity-50"
+                  title="Check for updates"
+                >
+                  <svg
+                    className={`w-5 h-5 text-white/60 ${refreshing ? 'animate-spin' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                </button>
+              )}
             </div>
             {status?.isRevealed && (
               <p className="text-white/50 text-sm mt-4 pt-4 border-t border-white/10">
