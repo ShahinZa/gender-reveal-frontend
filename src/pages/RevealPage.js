@@ -130,13 +130,13 @@ function RevealPage() {
 
         <div className="relative z-10 w-full max-w-md">
           <Card className="text-center">
-            <div className="text-6xl mb-4">⏳</div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Not Ready Yet</h1>
+            <div className="text-6xl mb-4">🎁</div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Not Yet!</h1>
             <p className="text-white/60 mb-6">
-              The doctor hasn't selected the gender yet. Please check back later.
+              The big secret is still being kept. Check back soon!
             </p>
             <Button variant="secondary" fullWidth onClick={checkStatus}>
-              Refresh
+              Check Now
             </Button>
           </Card>
         </div>
