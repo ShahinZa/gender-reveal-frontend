@@ -77,6 +77,11 @@ function Dashboard() {
               </span>
             </div>
           </div>
+          {status?.isRevealed && (
+            <p className="auto-delete-note">
+              Reveal data will be automatically deleted after 60 days for your privacy.
+            </p>
+          )}
         </div>
 
         {/* Code Cards */}
