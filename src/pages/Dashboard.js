@@ -1,13 +1,11 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ApiContext } from '../App';
 import './Dashboard.css';
 
 function Dashboard() {
   const navigate = useNavigate();
   const { user, status, logout, isAuthenticated, loading, refreshStatus } = useAuth();
-  const apiUrl = useContext(ApiContext);
   const [copied, setCopied] = useState(null);
 
   useEffect(() => {
