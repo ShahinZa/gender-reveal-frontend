@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './Home.css';
 
 function Home() {
   const navigate = useNavigate();
@@ -9,91 +8,137 @@ function Home() {
 
   if (loading) {
     return (
-      <div className="home-container">
-        <div className="loading-spinner"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="home-container">
-      <div className="stars"></div>
-      <div className="content animate-fadeIn">
-        <div className="baby-icon animate-float">
-          <span role="img" aria-label="baby">👶</span>
-        </div>
+    <div className="min-h-screen relative">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900" />
 
-        <h1 className="title script-font">Baby Gender Reveal</h1>
-        <p className="subtitle">Create magical moments for your special day</p>
+      {/* Subtle accent glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-purple-500/10 rounded-full blur-3xl" />
 
-        <div className="features">
-          <div className="feature">
-            <span className="feature-icon">🔐</span>
-            <span>Secure & Encrypted</span>
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Navigation */}
+        <nav className="flex justify-between items-center px-6 py-4 md:px-12 md:py-6">
+          <div className="text-white/90 font-semibold text-lg">
+            GenderReveal
           </div>
-          <div className="feature">
-            <span className="feature-icon">🎉</span>
-            <span>Beautiful Animations</span>
-          </div>
-          <div className="feature">
-            <span className="feature-icon">📱</span>
-            <span>Cast to TV</span>
-          </div>
-        </div>
-
-        <div className="button-container">
           {isAuthenticated ? (
             <button
-              className="nav-button primary-btn"
               onClick={() => navigate('/dashboard')}
+              className="text-white/70 hover:text-white text-sm font-medium transition-colors"
             >
-              <span className="btn-icon">🏠</span>
-              <span className="btn-text">Go to Dashboard</span>
-              <span className="btn-subtitle">Manage your reveal</span>
+              Dashboard
             </button>
           ) : (
-            <>
-              <button
-                className="nav-button primary-btn"
-                onClick={() => navigate('/auth')}
-              >
-                <span className="btn-icon">✨</span>
-                <span className="btn-text">Get Started</span>
-                <span className="btn-subtitle">Create your reveal</span>
-              </button>
-
-              <button
-                className="nav-button secondary-btn"
-                onClick={() => navigate('/auth?mode=login')}
-              >
-                <span className="btn-icon">👤</span>
-                <span className="btn-text">Sign In</span>
-                <span className="btn-subtitle">Already have an account</span>
-              </button>
-            </>
+            <button
+              onClick={() => navigate('/auth?mode=login')}
+              className="text-white/70 hover:text-white text-sm font-medium transition-colors"
+            >
+              Sign In
+            </button>
           )}
-        </div>
+        </nav>
 
-        <div className="how-it-works">
-          <h3>How it works</h3>
-          <div className="steps">
-            <div className="step">
-              <span className="step-number">1</span>
-              <span className="step-text">Register & get your unique codes</span>
+        {/* Hero Section */}
+        <div className="flex-1 flex items-center justify-center px-6 py-12">
+          <div className="max-w-2xl text-center">
+            {/* Icon */}
+            <div className="text-6xl mb-8">
+              👶
             </div>
-            <div className="step">
-              <span className="step-number">2</span>
-              <span className="step-text">Give doctor code to radiologist</span>
+
+            {/* Headline */}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+              Share the joy with a
+              <span className="block mt-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent leading-normal">
+                magical reveal
+              </span>
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-lg md:text-xl text-white/60 mb-10 max-w-lg mx-auto leading-relaxed">
+              A secure, encrypted way to keep your baby's gender a surprise until the perfect moment.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="mb-16">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                {isAuthenticated ? (
+                  <button
+                    className="bg-white text-slate-900 font-semibold py-4 px-8 rounded-full hover:bg-white/90 transition-all duration-200 shadow-lg shadow-white/10"
+                    onClick={() => navigate('/dashboard')}
+                  >
+                    Go to Dashboard
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      className="bg-white text-slate-900 font-semibold py-4 px-8 rounded-full hover:bg-white/90 transition-all duration-200 shadow-lg shadow-white/10"
+                      onClick={() => navigate('/auth')}
+                    >
+                      Get Started Free
+                    </button>
+                    <button
+                      className="text-white/80 font-medium py-4 px-8 rounded-full border border-white/20 hover:bg-white/5 hover:border-white/30 transition-all duration-200"
+                      onClick={() => navigate('/auth?mode=login')}
+                    >
+                      I have an account
+                    </button>
+                  </>
+                )}
+              </div>
+              {!isAuthenticated && (
+                <p className="text-white/30 text-xs text-center mt-6">
+                  Always free, no hidden costs
+                </p>
+              )}
             </div>
-            <div className="step">
-              <span className="step-number">3</span>
-              <span className="step-text">Use reveal code at your party!</span>
+
+            {/* How it works - minimal */}
+            <div className="grid md:grid-cols-3 gap-8 text-left">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
+                  1
+                </div>
+                <h3 className="text-white font-medium">Create your reveal</h3>
+                <p className="text-white/50 text-sm leading-relaxed">
+                  Sign up and get two special links, one for your secret keeper and one for the big reveal.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
+                  2
+                </div>
+                <h3 className="text-white font-medium">Secret keeper selects</h3>
+                <p className="text-white/50 text-sm leading-relaxed">
+                  Share your link with someone who knows. They select the gender and it stays hidden until the reveal.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
+                  3
+                </div>
+                <h3 className="text-white font-medium">Reveal the surprise</h3>
+                <p className="text-white/50 text-sm leading-relaxed">
+                  Open the reveal page at your party and discover together.
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        <footer className="footer">
-          <p>Made with ❤️ for families everywhere</p>
+        {/* Footer */}
+        <footer className="px-6 py-6 text-center">
+          <p className="text-white/30 text-sm">
+            Made with care for families everywhere
+          </p>
         </footer>
       </div>
     </div>

@@ -1,10 +1,5 @@
 import React from 'react';
-import './Input.css';
 
-/**
- * Reusable Input Component
- * Single Responsibility: Form input rendering
- */
 const Input = ({
   label,
   error,
@@ -13,14 +8,30 @@ const Input = ({
   ...props
 }) => {
   return (
-    <div className={`input-group ${error ? 'has-error' : ''} ${className}`}>
-      {label && <label className="input-label">{label}</label>}
+    <div className={`mb-4 ${className}`}>
+      {label && (
+        <label className="block text-white/80 text-sm font-medium mb-2">
+          {label}
+        </label>
+      )}
       <input
         type={type}
-        className="input-field"
+        className={`
+          w-full bg-white/5 backdrop-blur border rounded-xl px-4 py-3.5 text-white
+          placeholder-white/40 transition-all duration-300
+          focus:bg-white/10 focus:ring-2 focus:ring-purple-400/20 focus:outline-none
+          ${error
+            ? 'border-red-400/50 focus:border-red-400/70'
+            : 'border-white/20 focus:border-purple-400/50'
+          }
+        `}
         {...props}
       />
-      {error && <span className="input-error">{error}</span>}
+      {error && (
+        <span className="text-red-400 text-sm mt-1.5 block">
+          {error}
+        </span>
+      )}
     </div>
   );
 };

@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { genderService } from '../api';
-import { Button, Card, Spinner, Alert } from '../components/common';
-import './DoctorPage.css';
+import { Card, Spinner, Alert } from '../components/common';
 
-/**
- * Doctor Page
- * Allows radiologist to select baby's gender
- */
 function DoctorPage() {
   const { code } = useParams();
 
@@ -26,7 +21,7 @@ function DoctorPage() {
       const data = await genderService.getStatusByCode(code);
 
       if (!data.isDoctor) {
-        setError('This is not a doctor link');
+        setError('This is not a valid selection link');
         setStep('error');
         return;
       }
@@ -75,8 +70,8 @@ function DoctorPage() {
   // Loading
   if (step === 'loading') {
     return (
-      <div className="doctor-container">
-        <Spinner size="large" color="blue" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size="large" color="white" />
       </div>
     );
   }
@@ -84,16 +79,17 @@ function DoctorPage() {
   // Already locked
   if (step === 'locked') {
     return (
-      <div className="doctor-container">
-        <Card>
-          <Card.Icon>🔒</Card.Icon>
-          <Card.Title>Already Selected</Card.Title>
-          <Card.Subtitle>
-            The gender has already been selected and locked.
-            It cannot be changed.
-          </Card.Subtitle>
-          <p className="done-text">You can close this tab now</p>
-        </Card>
+      <div className="min-h-screen relative flex items-center justify-center px-4 py-12">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-amber-900/10 to-slate-900" />
+
+        <div className="relative z-10 w-full max-w-md text-center">
+          <div className="text-6xl mb-6">🔒</div>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">Already Selected</h1>
+          <p className="text-white/50 mb-8">
+            The gender has been selected and locked. It cannot be changed.
+          </p>
+          <p className="text-white/30 text-sm">You can close this page</p>
+        </div>
       </div>
     );
   }
@@ -101,15 +97,22 @@ function DoctorPage() {
   // Error
   if (step === 'error') {
     return (
-      <div className="doctor-container">
-        <Card>
-          <Card.Icon>⚠️</Card.Icon>
-          <Card.Title>Error</Card.Title>
-          <Alert variant="error">{error}</Alert>
-          <Button variant="secondary" fullWidth onClick={handleBack}>
-            Try Again
-          </Button>
-        </Card>
+      <div className="min-h-screen relative flex items-center justify-center px-4 py-12">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-red-900/10 to-slate-900" />
+
+        <div className="relative z-10 w-full max-w-md">
+          <Card className="text-center">
+            <div className="text-5xl mb-4">⚠️</div>
+            <h1 className="text-xl font-bold text-white mb-4">Something went wrong</h1>
+            <Alert variant="error">{error}</Alert>
+            <button
+              onClick={handleBack}
+              className="mt-4 w-full py-3 rounded-full font-semibold bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all"
+            >
+              Try Again
+            </button>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -117,69 +120,106 @@ function DoctorPage() {
   // Gender Selection
   if (step === 'select') {
     return (
-      <div className="doctor-container">
-        <Card>
-          <Card.Icon>👶</Card.Icon>
-          <Card.Title>Select Gender</Card.Title>
-          {userInfo?.userEmail && (
-            <Card.Subtitle>For: {userInfo.userEmail}</Card.Subtitle>
-          )}
+      <div className="min-h-screen relative flex items-center justify-center px-4 py-12">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-purple-500/10 rounded-full blur-3xl" />
 
-          <div className="gender-buttons">
+        <div className="relative z-10 w-full max-w-lg text-center">
+          {/* Header */}
+          <div className="mb-10">
+            <p className="text-white/50 text-sm mb-2">You're the secret keeper</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">Select the Gender</h1>
+            {userInfo?.userEmail && (
+              <p className="text-white/40 text-sm">
+                For {userInfo.userEmail}
+              </p>
+            )}
+          </div>
+
+          {/* Gender Buttons */}
+          <div className="grid grid-cols-2 gap-5 mb-8">
             <button
-              className="gender-button boy"
+              className="group relative p-8 rounded-3xl bg-blue-500/10 border-2 border-blue-400/20 hover:border-blue-400/50 hover:bg-blue-500/20 transition-all duration-300 hover:scale-[1.02]"
               onClick={() => handleGenderSelect('boy')}
             >
-              <span className="gender-icon">👦</span>
-              <span className="gender-label">Boy</span>
+              <div className="text-7xl mb-4 group-hover:scale-110 transition-transform duration-300">👦</div>
+              <div className="text-white font-semibold text-xl">Boy</div>
+              <div className="absolute inset-0 rounded-3xl bg-blue-400/0 group-hover:bg-blue-400/5 transition-all" />
             </button>
 
             <button
-              className="gender-button girl"
+              className="group relative p-8 rounded-3xl bg-pink-500/10 border-2 border-pink-400/20 hover:border-pink-400/50 hover:bg-pink-500/20 transition-all duration-300 hover:scale-[1.02]"
               onClick={() => handleGenderSelect('girl')}
             >
-              <span className="gender-icon">👧</span>
-              <span className="gender-label">Girl</span>
+              <div className="text-7xl mb-4 group-hover:scale-110 transition-transform duration-300">👧</div>
+              <div className="text-white font-semibold text-xl">Girl</div>
+              <div className="absolute inset-0 rounded-3xl bg-pink-400/0 group-hover:bg-pink-400/5 transition-all" />
             </button>
           </div>
 
-          <p className="warning-text">
-            This selection will be permanently locked
+          {/* Warning */}
+          <p className="text-white/40 text-sm">
+            This selection is permanent and encrypted
           </p>
-        </Card>
+        </div>
       </div>
     );
   }
 
   // Confirmation
   if (step === 'confirm') {
-    return (
-      <div className="doctor-container">
-        <Card>
-          <Card.Title>Confirm Selection</Card.Title>
+    const isBoy = selectedGender === 'boy';
 
-          <div className={`selected-preview ${selectedGender}`}>
-            <span className="preview-icon">
-              {selectedGender === 'boy' ? '👦' : '👧'}
-            </span>
-            <span className="preview-text">
-              {selectedGender === 'boy' ? 'BOY' : 'GIRL'}
-            </span>
+    return (
+      <div className="min-h-screen relative flex items-center justify-center px-4 py-12">
+        <div className={`absolute inset-0 bg-gradient-to-b from-slate-900 ${isBoy ? 'via-blue-900/20' : 'via-pink-900/20'} to-slate-900`} />
+
+        <div className="relative z-10 w-full max-w-md text-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-8">Confirm your selection</h1>
+
+          <div className={`p-10 rounded-3xl mb-8 ${
+            isBoy
+              ? 'bg-blue-500/10 border-2 border-blue-400/30'
+              : 'bg-pink-500/10 border-2 border-pink-400/30'
+          }`}>
+            <div className="text-8xl mb-4">{isBoy ? '👦' : '👧'}</div>
+            <div className={`text-3xl font-bold ${isBoy ? 'text-blue-300' : 'text-pink-300'}`}>
+              {isBoy ? 'BOY' : 'GIRL'}
+            </div>
           </div>
 
-          <p className="confirm-text">
-            Are you sure? This cannot be undone.
+          <p className="text-white/50 mb-8">
+            Once confirmed, this cannot be changed.
           </p>
 
-          <div className="confirm-buttons">
-            <Button variant="secondary" onClick={handleBack} disabled={loading}>
+          <div className="flex gap-4">
+            <button
+              onClick={handleBack}
+              disabled={loading}
+              className="flex-1 py-3.5 rounded-full font-semibold bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all disabled:opacity-50"
+            >
               Back
-            </Button>
-            <Button variant="success" onClick={handleConfirm} loading={loading}>
-              Confirm
-            </Button>
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={loading}
+              className={`flex-1 py-3.5 rounded-full font-semibold transition-all disabled:opacity-50 ${
+                isBoy
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-pink-500 text-white hover:bg-pink-600'
+              }`}
+            >
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                'Confirm'
+              )}
+            </button>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
@@ -187,16 +227,24 @@ function DoctorPage() {
   // Success
   if (step === 'success') {
     return (
-      <div className="doctor-container">
-        <Card>
-          <div className="success-icon">✓</div>
-          <Card.Title>Saved!</Card.Title>
-          <Card.Subtitle>
-            The gender has been securely encrypted and saved.
-            The parents will discover the surprise at their reveal party!
-          </Card.Subtitle>
-          <p className="done-text">You can close this tab now</p>
-        </Card>
+      <div className="min-h-screen relative flex items-center justify-center px-4 py-12">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-emerald-900/20 to-slate-900" />
+
+        <div className="relative z-10 w-full max-w-md text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-emerald-500 flex items-center justify-center">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">Secret Saved!</h1>
+
+          <p className="text-white/50 mb-8 leading-relaxed">
+            The gender is now encrypted and hidden until the big reveal. The parents have no way to see it!
+          </p>
+
+          <p className="text-white/30 text-sm">You can close this page</p>
+        </div>
       </div>
     );
   }
