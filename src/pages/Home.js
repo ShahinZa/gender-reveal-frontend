@@ -135,15 +135,14 @@ function Home() {
         </div>
 
         {/* Footer */}
-        <footer className="px-6 py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-white/30 text-xs">
-            <span>&copy; 2025 babyreveal.party. All rights reserved.</span>
-            <span className="hidden sm:inline">·</span>
+        <footer className="px-6 py-8 border-t border-white/5">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
+            <span className="text-white/25 text-xs">&copy; 2025 babyreveal.party</span>
             <button
               onClick={() => navigate('/privacy')}
-              className="hover:text-white/50 transition-colors"
+              className="text-white/25 hover:text-white/50 text-xs transition-colors"
             >
-              Privacy Policy
+              Privacy
             </button>
           </div>
         </footer>
