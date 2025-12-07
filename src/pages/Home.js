@@ -141,6 +141,12 @@ function Home() {
             <div className="flex items-center gap-4">
               <span className="text-white/25 text-xs">Made with ❤️ for everyone</span>
               <button
+                onClick={() => navigate('/about')}
+                className="text-white/25 hover:text-white/50 text-xs transition-colors"
+              >
+                About
+              </button>
+              <button
                 onClick={() => navigate('/privacy')}
                 className="text-white/25 hover:text-white/50 text-xs transition-colors"
               >

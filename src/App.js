@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import DoctorPage from './pages/DoctorPage';
 import RevealPage from './pages/RevealPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import About from './pages/About';
 
 /**
  * Root Application Component
@@ -23,6 +24,7 @@ function App() {
           <Route path="/secret/:code" element={<DoctorPage />} />
           <Route path="/reveal/:code" element={<RevealPage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </Router>
     </AuthProvider>
