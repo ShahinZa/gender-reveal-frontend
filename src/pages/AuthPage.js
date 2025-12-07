@@ -74,7 +74,7 @@ function AuthPage() {
           </button>
 
           {/* Title */}
-          <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-2 mt-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-2 mt-8">
             {mode === 'register' ? 'Create Account' : 'Welcome Back'}
           </h1>
 
