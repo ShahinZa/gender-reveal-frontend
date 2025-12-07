@@ -8,6 +8,7 @@ import DoctorPage from './pages/DoctorPage';
 import RevealPage from './pages/RevealPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import About from './pages/About';
+import Disclaimer from './pages/Disclaimer';
 
 /**
  * Root Application Component
@@ -25,6 +26,7 @@ function App() {
           <Route path="/reveal/:code" element={<RevealPage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/about" element={<About />} />
+          <Route path="/disclaimer" element={<Disclaimer />} />
         </Routes>
       </Router>
     </AuthProvider>

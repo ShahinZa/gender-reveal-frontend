@@ -152,6 +152,12 @@ function Home() {
               >
                 Privacy Policy
               </button>
+              <button
+                onClick={() => navigate('/disclaimer')}
+                className="text-white/25 hover:text-white/50 text-xs transition-colors"
+              >
+                Terms
+              </button>
             </div>
           </div>
         </footer>

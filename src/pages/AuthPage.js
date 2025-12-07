@@ -140,6 +140,21 @@ function AuthPage() {
           {mode === 'register' && (
             <p className="text-white/30 text-[11px] text-center mt-5">
               We only use your email for login. Nothing else. No password reset available.
+              <br />
+              By signing up, you agree to our{' '}
+              <span
+                onClick={() => navigate('/privacy')}
+                className="underline cursor-pointer hover:text-white/50"
+              >
+                Privacy Policy
+              </span>
+              {' '}and{' '}
+              <span
+                onClick={() => navigate('/disclaimer')}
+                className="underline cursor-pointer hover:text-white/50"
+              >
+                Terms of Service
+              </span>.
             </p>
           )}
 
