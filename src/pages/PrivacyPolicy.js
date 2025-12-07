@@ -23,7 +23,7 @@ function PrivacyPolicy() {
               Back
             </button>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Privacy Policy</h1>
-            <p className="text-white/50 text-sm">Last updated: December 2024</p>
+            <p className="text-white/50 text-sm">Last updated: December 2025</p>
           </div>
 
           {/* Content */}
