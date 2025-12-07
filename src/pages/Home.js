@@ -27,7 +27,7 @@ function Home() {
         {/* Navigation */}
         <nav className="flex justify-between items-center px-6 py-4 md:px-12 md:py-6">
           <div className="text-white/90 font-semibold text-lg">
-            GenderReveal
+            babyreveal.party
           </div>
           {isAuthenticated ? (
             <button
