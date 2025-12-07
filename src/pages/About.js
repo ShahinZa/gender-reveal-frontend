@@ -36,7 +36,7 @@ function About() {
               </div>
               <div className="space-y-4 text-white/70 leading-relaxed">
                 <p>
-                  Hi! We're a husband and wife team from Canada, both PhD students in science. Computer Science and Biochemistry.
+                  Hi! We're a husband and wife team from Canada 🇨🇦, both PhD students in science. Computer Science and Biochemistry.
                 </p>
                 <p>
                   When we were expecting, we wanted to do a gender reveal but realized that traditional reveals with confetti, balloons, and other single-use items aren't exactly eco-friendly.
