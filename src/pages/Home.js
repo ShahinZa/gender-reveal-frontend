@@ -135,16 +135,17 @@ function Home() {
         </div>
 
         {/* Footer */}
-        <footer className="px-6 py-6 text-center">
-          <p className="text-white/30 text-sm mb-2">
-            Made with care for families everywhere
-          </p>
-          <button
-            onClick={() => navigate('/privacy')}
-            className="text-white/30 hover:text-white/50 text-xs transition-colors"
-          >
-            Privacy Policy
-          </button>
+        <footer className="px-6 py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-white/30 text-xs">
+            <span>&copy; 2025 babyreveal.party. All rights reserved.</span>
+            <span className="hidden sm:inline">·</span>
+            <button
+              onClick={() => navigate('/privacy')}
+              className="hover:text-white/50 transition-colors"
+            >
+              Privacy Policy
+            </button>
+          </div>
         </footer>
       </div>
     </div>
