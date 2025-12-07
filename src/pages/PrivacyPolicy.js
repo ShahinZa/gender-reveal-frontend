@@ -119,7 +119,7 @@ function PrivacyPolicy() {
                 <div>
                   <h3 className="text-white font-medium mb-2">Email Address</h3>
                   <p className="leading-relaxed">
-                    We collect your email address solely for account creation and authentication purposes. We do not send marketing emails, newsletters, or promotional content. The only emails you'll receive are essential account-related communications (such as password reset requests).
+                    We collect your email address solely for account creation and authentication purposes. We do not send marketing emails, newsletters, or promotional content.
                   </p>
                 </div>
                 <div>
