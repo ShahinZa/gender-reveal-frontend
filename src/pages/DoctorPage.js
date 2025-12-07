@@ -120,9 +120,9 @@ function DoctorPage() {
   // Gender Selection
   if (step === 'select') {
     return (
-      <div className="min-h-screen relative flex items-center justify-center px-4 py-12">
+      <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[600px] h-[300px] bg-purple-500/10 rounded-full blur-3xl" />
 
         <div className="relative z-10 w-full max-w-lg text-center">
           {/* Header */}
