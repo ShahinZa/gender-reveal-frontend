@@ -136,9 +136,15 @@ function Home() {
 
         {/* Footer */}
         <footer className="px-6 py-6 text-center">
-          <p className="text-white/30 text-sm">
+          <p className="text-white/30 text-sm mb-2">
             Made with care for families everywhere
           </p>
+          <button
+            onClick={() => navigate('/privacy')}
+            className="text-white/30 hover:text-white/50 text-xs transition-colors"
+          >
+            Privacy Policy
+          </button>
         </footer>
       </div>
     </div>
