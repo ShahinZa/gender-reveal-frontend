@@ -136,10 +136,9 @@ function Home() {
 
         {/* Footer */}
         <footer className="px-6 py-8 border-t border-white/5">
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
-            <span className="text-white/25 text-xs">&copy; 2025 babyreveal.party</span>
+          <div className="max-w-2xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <span className="text-white/25 text-xs">Made with ❤️ in Canada</span>
             <div className="flex items-center gap-4">
-              <span className="text-white/25 text-xs">Made with ❤️ in Canada</span>
               <button
                 onClick={() => navigate('/about')}
                 className="text-white/25 hover:text-white/50 text-xs transition-colors"
@@ -150,7 +149,7 @@ function Home() {
                 onClick={() => navigate('/privacy')}
                 className="text-white/25 hover:text-white/50 text-xs transition-colors"
               >
-                Privacy Policy
+                Privacy
               </button>
               <button
                 onClick={() => navigate('/disclaimer')}
@@ -159,6 +158,7 @@ function Home() {
                 Terms
               </button>
             </div>
+            <span className="text-white/25 text-xs">&copy; 2025 babyreveal.party</span>
           </div>
         </footer>
       </div>
