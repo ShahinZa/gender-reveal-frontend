@@ -200,7 +200,7 @@ function PrivacyPolicy() {
 
             {/* Footer note */}
             <p className="text-white/40 text-sm text-center pt-4">
-              This privacy policy may be updated from time to time. We will notify users of any material changes.
+              This privacy policy may be updated from time to time.
             </p>
           </div>
         </div>
