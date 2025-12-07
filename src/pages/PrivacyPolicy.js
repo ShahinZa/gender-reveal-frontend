@@ -70,6 +70,34 @@ function PrivacyPolicy() {
               </ul>
             </section>
 
+            {/* Third-Party Services */}
+            <section className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 md:p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-2xl">🌐</span>
+                <h2 className="text-xl font-semibold text-white">Third-Party Services</h2>
+              </div>
+              <p className="text-white/70 leading-relaxed mb-4">
+                While we do not set any tracking cookies ourselves, we rely on trusted infrastructure providers to deliver our service securely and reliably. These providers may set essential cookies for security and performance purposes:
+              </p>
+              <div className="space-y-4">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <h3 className="text-white font-medium mb-2">Cloudflare</h3>
+                  <p className="text-white/60 text-sm leading-relaxed">
+                    We use Cloudflare for DDoS protection, SSL/TLS encryption, and content delivery. Cloudflare may set essential security cookies (such as <code className="text-purple-400 bg-white/5 px-1.5 py-0.5 rounded">__cflb</code> or <code className="text-purple-400 bg-white/5 px-1.5 py-0.5 rounded">__cf_bm</code>) to protect against malicious traffic and ensure service availability. These are strictly functional cookies and are not used for tracking or advertising.
+                  </p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <h3 className="text-white font-medium mb-2">Hosting Providers</h3>
+                  <p className="text-white/60 text-sm leading-relaxed">
+                    Our hosting infrastructure may collect standard server logs (IP addresses, request timestamps) for security monitoring and abuse prevention. These logs are used solely for operational purposes and are not shared with third parties.
+                  </p>
+                </div>
+              </div>
+              <p className="text-white/50 text-sm mt-4">
+                We carefully select providers who share our commitment to privacy and only use services that are essential to operating a secure platform.
+              </p>
+            </section>
+
             {/* No Data Selling */}
             <section className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 md:p-8">
               <div className="flex items-center gap-3 mb-4">
