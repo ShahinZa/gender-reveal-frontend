@@ -287,7 +287,7 @@ function Dashboard() {
           ) : (
             <div className="mb-8">
               <button
-                className="w-full py-4 rounded-full font-semibold bg-white text-slate-900 hover:bg-white/90 hover:shadow-xl hover:shadow-white/20 transition-all text-lg hover:scale-[1.02]"
+                className="w-full py-4 rounded-full font-semibold bg-white text-slate-900 hover:bg-white/90 hover:shadow-xl hover:shadow-white/20 transition-all text-sm md:text-lg hover:scale-[1.02]"
                 onClick={() => window.open(`${window.location.origin}/secret/${user.doctorCode}`, '_blank')}
               >
                 Tap Here & Hand to Whoever Knows the Gender
