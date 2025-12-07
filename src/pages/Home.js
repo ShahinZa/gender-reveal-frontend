@@ -144,7 +144,7 @@ function Home() {
                 onClick={() => navigate('/privacy')}
                 className="text-white/25 hover:text-white/50 text-xs transition-colors"
               >
-                Privacy
+                Privacy Policy
               </button>
             </div>
           </div>
