@@ -73,13 +73,8 @@ function AuthPage() {
             Back
           </button>
 
-          {/* Icon */}
-          <div className="text-6xl text-center mb-4 mt-4">
-            {mode === 'register' ? '✨' : '👋'}
-          </div>
-
           {/* Title */}
-          <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-2 mt-4">
             {mode === 'register' ? 'Create Account' : 'Welcome Back'}
           </h1>
 
