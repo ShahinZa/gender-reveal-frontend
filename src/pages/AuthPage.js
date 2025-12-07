@@ -141,7 +141,7 @@ function AuthPage() {
             <p className="text-white/30 text-[11px] text-center mt-5">
               We only use your email for login. Nothing else.
               <br />
-              No password reset available.
+              Password recovery is not supported.
               <br />
               By signing up, you agree to our{' '}
               <span
