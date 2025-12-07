@@ -111,7 +111,7 @@ function Dashboard() {
           {/* Welcome Section */}
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Your Gender Reveal</h1>
-            <p className="text-white/60">Share the codes below to start your journey</p>
+            <p className="text-white/60">Here are your two links</p>
           </div>
 
           {/* Status Card */}
@@ -163,7 +163,7 @@ function Dashboard() {
                 <h3 className="text-white font-semibold text-lg">The Secret Keeper</h3>
               </div>
               <p className="text-white/60 text-sm mb-4">
-                Share with whoever knows the gender
+                For whoever knows the gender
               </p>
               <div
                 className={`bg-black/20 rounded-xl px-4 py-3 mb-4 text-center transition-all ${
@@ -230,7 +230,7 @@ function Dashboard() {
                 <h3 className="text-white font-semibold text-lg">The Big Reveal</h3>
               </div>
               <p className="text-white/60 text-sm mb-4">
-                Use this at your reveal party
+                Open this at your party
               </p>
               <div
                 className="bg-black/20 rounded-xl px-4 py-3 mb-4 text-center cursor-pointer hover:bg-black/30 transition-all"
@@ -290,30 +290,26 @@ function Dashboard() {
                 className="w-full py-4 rounded-full font-semibold bg-white text-slate-900 hover:bg-white/90 hover:shadow-xl hover:shadow-white/20 transition-all text-lg hover:scale-[1.02]"
                 onClick={() => window.open(`${window.location.origin}/secret/${user.doctorCode}`, '_blank')}
               >
-                Open Secret Keeper
+                Tap Here & Hand to Whoever Knows the Gender
               </button>
             </div>
           )}
 
           {/* Instructions */}
           <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-            <h3 className="text-white font-semibold text-lg mb-4">How to use</h3>
+            <h3 className="text-white font-semibold text-lg mb-4">How it works</h3>
             <ol className="space-y-4">
               <li className="flex items-start gap-4">
                 <span className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">1</span>
-                <p className="text-white/70 text-sm">Share the <span className="text-white font-medium">Secret Keeper</span> link with someone who knows the gender</p>
+                <p className="text-white/70 text-sm">Send the <span className="text-white font-medium">Secret Keeper</span> link to someone who knows. Or tap the button above and hand them your phone.</p>
               </li>
               <li className="flex items-start gap-4">
                 <span className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">2</span>
-                <p className="text-white/70 text-sm">They will select the gender (encrypted — hidden until your reveal)</p>
+                <p className="text-white/70 text-sm">They tap Boy or Girl. Done — it's locked and hidden.</p>
               </li>
               <li className="flex items-start gap-4">
                 <span className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">3</span>
-                <p className="text-white/70 text-sm">At your party, open <span className="text-white font-medium">The Big Reveal</span> and enjoy the moment together</p>
-              </li>
-              <li className="flex items-start gap-4">
-                <span className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">4</span>
-                <p className="text-white/70 text-sm">Enjoy the surprise!</p>
+                <p className="text-white/70 text-sm">At your party, open <span className="text-white font-medium">The Big Reveal</span> together!</p>
               </li>
             </ol>
           </div>

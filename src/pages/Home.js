@@ -107,27 +107,27 @@ function Home() {
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
                   1
                 </div>
-                <h3 className="text-white font-medium">Create your reveal</h3>
+                <h3 className="text-white font-medium">Sign up</h3>
                 <p className="text-white/50 text-sm leading-relaxed">
-                  Sign up and get two special links, one for your secret keeper and one for the big reveal.
+                  Create an account and get two links.
                 </p>
               </div>
               <div className="space-y-3">
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
                   2
                 </div>
-                <h3 className="text-white font-medium">Secret keeper selects</h3>
+                <h3 className="text-white font-medium">Someone picks</h3>
                 <p className="text-white/50 text-sm leading-relaxed">
-                  Share your link with someone who knows. They select the gender and it stays hidden until the reveal.
+                  Send a link or hand your phone to whoever knows the gender. They tap Boy or Girl.
                 </p>
               </div>
               <div className="space-y-3">
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
                   3
                 </div>
-                <h3 className="text-white font-medium">Reveal the surprise</h3>
+                <h3 className="text-white font-medium">Reveal together</h3>
                 <p className="text-white/50 text-sm leading-relaxed">
-                  Open the reveal page at your party and discover together.
+                  Open your Reveal link at the party. Find out together!
                 </p>
               </div>
             </div>

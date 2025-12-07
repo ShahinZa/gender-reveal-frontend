@@ -84,9 +84,9 @@ function DoctorPage() {
 
         <div className="relative z-10 w-full max-w-md text-center">
           <div className="text-6xl mb-6">🔒</div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">Already Selected</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">Already Done</h1>
           <p className="text-white/50 mb-8">
-            The gender has been selected and locked. It cannot be changed.
+            The gender was already picked. It can't be changed.
           </p>
           <p className="text-white/30 text-sm">You can close this page</p>
         </div>
@@ -128,7 +128,7 @@ function DoctorPage() {
           {/* Header */}
           <div className="mb-10">
             <p className="text-white/50 text-sm mb-2">You're the secret keeper</p>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">Select the Gender</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">Tap the gender</h1>
             {userInfo?.userEmail && (
               <p className="text-white/40 text-sm">
                 For {userInfo.userEmail}
@@ -157,9 +157,9 @@ function DoctorPage() {
             </button>
           </div>
 
-          {/* Warning */}
+          {/* Note */}
           <p className="text-white/40 text-sm">
-            This selection is permanent and encrypted
+            It stays hidden until the reveal
           </p>
         </div>
       </div>
@@ -175,7 +175,7 @@ function DoctorPage() {
         <div className={`absolute inset-0 bg-gradient-to-b from-slate-900 ${isBoy ? 'via-blue-900/20' : 'via-pink-900/20'} to-slate-900`} />
 
         <div className="relative z-10 w-full max-w-md text-center">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-8">Confirm your selection</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-8">Is this correct?</h1>
 
           <div className={`p-10 rounded-3xl mb-8 ${
             isBoy
@@ -189,7 +189,7 @@ function DoctorPage() {
           </div>
 
           <p className="text-white/50 mb-8">
-            Once confirmed, this cannot be changed.
+            You can't change it after this
           </p>
 
           <div className="flex gap-4">
@@ -215,7 +215,7 @@ function DoctorPage() {
                   Saving...
                 </span>
               ) : (
-                'Confirm'
+                'Yes, lock it'
               )}
             </button>
           </div>
@@ -237,13 +237,13 @@ function DoctorPage() {
             </svg>
           </div>
 
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">Secret Saved!</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">Done!</h1>
 
           <p className="text-white/50 mb-8 leading-relaxed">
-            The gender is now encrypted and hidden until the big reveal. The parents have no way to see it!
+            The secret is locked. No one can see it until the reveal.
           </p>
 
-          <p className="text-white/30 text-sm">You can close this page</p>
+          <p className="text-white/30 text-sm">You can close this page now</p>
         </div>
       </div>
     );
