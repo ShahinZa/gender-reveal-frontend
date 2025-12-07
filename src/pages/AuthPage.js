@@ -139,7 +139,7 @@ function AuthPage() {
           {/* Privacy Note - only show on register */}
           {mode === 'register' && (
             <p className="text-white/30 text-[11px] text-center mt-5">
-              We only use your email for login. Nothing else.
+              We only use your email for login. Nothing else. No password reset available.
             </p>
           )}
 
