@@ -144,7 +144,7 @@ function Home() {
                 onClick={() => navigate('/about')}
                 className="text-white/25 hover:text-white/50 text-xs transition-colors"
               >
-                About
+                About Us
               </button>
               <button
                 onClick={() => navigate('/privacy')}
