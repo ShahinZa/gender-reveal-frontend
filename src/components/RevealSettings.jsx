@@ -258,30 +258,23 @@ function RevealSettings({ isGenderSet = false }) {
             </div>
           </div>
 
-          {/* Baby Count */}
-          <div className={isGenderSet ? 'opacity-50' : ''}>
+          {/* Baby Count - Coming Soon */}
+          <div className="opacity-50">
             <label className="block text-white/70 text-sm font-medium mb-3">
               Number of Babies
-              {isGenderSet && (
-                <span className="ml-2 text-amber-400/80 text-xs font-normal inline-flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  Locked
-                </span>
-              )}
+              <span className="ml-2 text-purple-400/80 text-xs font-normal inline-flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Coming Soon
+              </span>
             </label>
             <div className="flex gap-3">
               {BABY_COUNT_OPTIONS.map(option => (
                 <button
                   key={option.value}
-                  onClick={() => !isGenderSet && handleChange('babyCount', option.value)}
-                  disabled={isGenderSet}
-                  className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
-                    preferences.babyCount === option.value
-                      ? 'border-white/50 bg-white/10 text-white'
-                      : 'border-white/10 text-white/60 hover:border-white/30'
-                  } ${isGenderSet ? 'cursor-not-allowed' : ''}`}
+                  disabled={true}
+                  className="flex-1 py-3 px-4 rounded-xl border-2 transition-all border-white/10 text-white/60 cursor-not-allowed"
                 >
                   <div className="text-xl mb-1">{option.icon}</div>
                   <div className="text-sm">{option.label}</div>
