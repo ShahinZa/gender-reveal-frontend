@@ -97,6 +97,31 @@ class ApiClient {
 
     return this.handleResponse(response);
   }
+
+  /**
+   * Make PUT request
+   */
+  async put(endpoint, body, includeAuth = true) {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'PUT',
+      headers: this.getHeaders(includeAuth),
+      body: JSON.stringify(body),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  /**
+   * Make DELETE request
+   */
+  async delete(endpoint, includeAuth = true) {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(includeAuth),
+    });
+
+    return this.handleResponse(response);
+  }
 }
 
 // Export singleton instance

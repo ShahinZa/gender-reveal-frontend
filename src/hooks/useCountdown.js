@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
  * Custom hook for countdown functionality
@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 const useCountdown = (initialCount = 5, onComplete) => {
   const [count, setCount] = useState(initialCount);
   const [isRunning, setIsRunning] = useState(false);
+  const countdownDuration = useRef(initialCount);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -24,21 +25,27 @@ const useCountdown = (initialCount = 5, onComplete) => {
     return () => clearTimeout(timer);
   }, [count, isRunning, onComplete]);
 
-  const start = useCallback(() => {
-    setCount(initialCount);
+  const start = useCallback((duration) => {
+    const startCount = duration ?? countdownDuration.current;
+    setCount(startCount);
     setIsRunning(true);
-  }, [initialCount]);
+  }, []);
 
   const reset = useCallback(() => {
-    setCount(initialCount);
+    setCount(countdownDuration.current);
     setIsRunning(false);
-  }, [initialCount]);
+  }, []);
+
+  const setDuration = useCallback((duration) => {
+    countdownDuration.current = duration;
+  }, []);
 
   return {
     count,
     isRunning,
     start,
     reset,
+    setDuration,
   };
 };
 

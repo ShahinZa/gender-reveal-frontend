@@ -11,6 +11,7 @@ function DoctorPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
+  const [babyCount, setBabyCount] = useState(1);
 
   useEffect(() => {
     checkStatus();
@@ -30,6 +31,7 @@ function DoctorPage() {
         setStep('locked');
       } else {
         setUserInfo(data);
+        setBabyCount(data.babyCount || 1);
         setStep('select');
       }
     } catch (err) {
@@ -119,6 +121,10 @@ function DoctorPage() {
 
   // Gender Selection
   if (step === 'select') {
+    const babyLabel = babyCount === 1 ? '' : babyCount === 2 ? 'Twin ' : 'Triplet ';
+    const boyEmojis = Array(babyCount).fill('👦').join('');
+    const girlEmojis = Array(babyCount).fill('👧').join('');
+
     return (
       <div className="h-screen relative overflow-hidden flex items-center justify-center px-4">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900" />
@@ -129,6 +135,11 @@ function DoctorPage() {
           <div className="mb-10">
             <p className="text-white/50 text-sm mb-2">You're the secret keeper</p>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">Tap the gender</h1>
+            {babyCount > 1 && (
+              <p className="text-purple-400 text-sm mb-2">
+                {babyCount === 2 ? '👶👶 Twins' : '👶👶👶 Triplets'}
+              </p>
+            )}
             {userInfo?.userEmail && (
               <p className="text-white/40 text-sm">
                 For {userInfo.userEmail}
@@ -142,8 +153,12 @@ function DoctorPage() {
               className="group relative p-8 rounded-3xl bg-blue-500/10 border-2 border-blue-400/20 hover:border-blue-400/50 hover:bg-blue-500/20 transition-all duration-300 hover:scale-[1.02]"
               onClick={() => handleGenderSelect('boy')}
             >
-              <div className="text-7xl mb-4 group-hover:scale-110 transition-transform duration-300">👦</div>
-              <div className="text-white font-semibold text-xl">Boy</div>
+              <div className={`${babyCount > 1 ? 'text-5xl' : 'text-7xl'} mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                {boyEmojis}
+              </div>
+              <div className="text-white font-semibold text-xl">
+                {babyLabel}{babyCount === 1 ? 'Boy' : 'Boys'}
+              </div>
               <div className="absolute inset-0 rounded-3xl bg-blue-400/0 group-hover:bg-blue-400/5 transition-all" />
             </button>
 
@@ -151,8 +166,12 @@ function DoctorPage() {
               className="group relative p-8 rounded-3xl bg-pink-500/10 border-2 border-pink-400/20 hover:border-pink-400/50 hover:bg-pink-500/20 transition-all duration-300 hover:scale-[1.02]"
               onClick={() => handleGenderSelect('girl')}
             >
-              <div className="text-7xl mb-4 group-hover:scale-110 transition-transform duration-300">👧</div>
-              <div className="text-white font-semibold text-xl">Girl</div>
+              <div className={`${babyCount > 1 ? 'text-5xl' : 'text-7xl'} mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                {girlEmojis}
+              </div>
+              <div className="text-white font-semibold text-xl">
+                {babyLabel}{babyCount === 1 ? 'Girl' : 'Girls'}
+              </div>
               <div className="absolute inset-0 rounded-3xl bg-pink-400/0 group-hover:bg-pink-400/5 transition-all" />
             </button>
           </div>
@@ -169,6 +188,11 @@ function DoctorPage() {
   // Confirmation
   if (step === 'confirm') {
     const isBoy = selectedGender === 'boy';
+    const emojis = Array(babyCount).fill(isBoy ? '👦' : '👧').join('');
+    const babyLabel = babyCount === 1 ? '' : babyCount === 2 ? 'TWIN ' : 'TRIPLET ';
+    const genderLabel = isBoy
+      ? (babyCount === 1 ? 'BOY' : 'BOYS')
+      : (babyCount === 1 ? 'GIRL' : 'GIRLS');
 
     return (
       <div className="min-h-screen relative flex items-center justify-center px-4 py-12">
@@ -182,9 +206,9 @@ function DoctorPage() {
               ? 'bg-blue-500/10 border-2 border-blue-400/30'
               : 'bg-pink-500/10 border-2 border-pink-400/30'
           }`}>
-            <div className="text-8xl mb-4">{isBoy ? '👦' : '👧'}</div>
+            <div className={`${babyCount > 1 ? 'text-6xl' : 'text-8xl'} mb-4`}>{emojis}</div>
             <div className={`text-3xl font-bold ${isBoy ? 'text-blue-300' : 'text-pink-300'}`}>
-              {isBoy ? 'BOY' : 'GIRL'}
+              {babyLabel}{genderLabel}
             </div>
           </div>
 

@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
-import { genderService } from '../api';
+import { genderService, authService } from '../api';
 import { useCountdown, useAudio } from '../hooks';
 import { Button, Card, Spinner, Alert } from '../components/common';
+import { THEME_COLORS, INTENSITY_SETTINGS, DEFAULT_PREFERENCES } from '../constants/revealThemes';
 
 function RevealPage() {
   const { code } = useParams();
@@ -13,6 +14,13 @@ function RevealPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [gender, setGender] = useState(null);
+  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+
+  // Password protection state
+  const [passwordRequired, setPasswordRequired] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [verifyingPassword, setVerifyingPassword] = useState(false);
 
   const { playDrumroll, playCelebration, stopAudio } = useAudio();
 
@@ -20,9 +28,14 @@ function RevealPage() {
     setStep('opening');
     setTimeout(() => {
       setStep('reveal');
-      triggerConfetti(gender);
+      // Play celebration sound when reveal shows (after balloons)
+      if (preferences.soundEnabled) {
+        const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
+        playCelebration(customCelebrationAudio);
+      }
+      triggerConfetti(gender, false); // Don't play sound in triggerConfetti, already handled above
     }, 1200);
-  }, [gender]);
+  }, [gender, preferences, playCelebration]);
 
   const { count, start: startCountdown } = useCountdown(5, onCountdownComplete);
 
@@ -41,14 +54,52 @@ function RevealPage() {
         return;
       }
 
+      // Store preferences from API response
+      if (data.preferences) {
+        setPreferences({ ...DEFAULT_PREFERENCES, ...data.preferences });
+      }
+
       if (!data.isSet) {
         setStep('not-ready');
       } else {
-        setStep('ready');
+        // Check if password is required
+        try {
+          const pwCheck = await authService.checkRevealPassword(code);
+          if (pwCheck.passwordRequired) {
+            setPasswordRequired(true);
+            setStep('password');
+          } else {
+            setStep('ready');
+          }
+        } catch {
+          // If check fails, proceed without password
+          setStep('ready');
+        }
       }
     } catch (err) {
       setError(err.message || 'Invalid or expired link');
       setStep('error');
+    }
+  };
+
+  const verifyPassword = async () => {
+    if (!passwordInput) {
+      setPasswordError('Please enter the password');
+      return;
+    }
+    setPasswordError('');
+    setVerifyingPassword(true);
+    try {
+      const result = await authService.verifyRevealPassword(code, passwordInput);
+      if (result.valid) {
+        setStep('ready');
+      } else {
+        setPasswordError('Incorrect password');
+      }
+    } catch (err) {
+      setPasswordError(err.message || 'Invalid password');
+    } finally {
+      setVerifyingPassword(false);
     }
   };
 
@@ -59,8 +110,12 @@ function RevealPage() {
       const data = await genderService.revealGender(code);
       setGender(data.gender);
       setStep('countdown');
-      playDrumroll();
-      startCountdown();
+      if (preferences.soundEnabled) {
+        // Use custom audio if available, pass countdown duration to auto-stop
+        const customCountdownAudio = preferences.customAudio?.countdown?.data || null;
+        playDrumroll(customCountdownAudio, preferences.countdownDuration);
+      }
+      startCountdown(preferences.countdownDuration);
     } catch (err) {
       setError(err.message || 'Failed to reveal');
       setStep('error');
@@ -70,16 +125,18 @@ function RevealPage() {
   };
 
   const triggerConfetti = (revealedGender, withSound = true) => {
-    const colors = revealedGender === 'boy'
-      ? ['#93c5fd', '#60a5fa', '#3b82f6', '#2563eb']
-      : ['#f9a8d4', '#f472b6', '#ec4899', '#db2777'];
+    const theme = THEME_COLORS[preferences.theme] || THEME_COLORS.classic;
+    const intensity = INTENSITY_SETTINGS[preferences.animationIntensity] || INTENSITY_SETTINGS.medium;
+    const colors = revealedGender === 'boy' ? theme.boy : theme.girl;
 
-    if (withSound) {
-      playCelebration();
+    if (withSound && preferences.soundEnabled) {
+      // Use custom audio if available
+      const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
+      playCelebration(customCelebrationAudio);
     }
 
     confetti({
-      particleCount: 150,
+      particleCount: intensity.particleCount,
       spread: 100,
       origin: { y: 0.6 },
       colors
@@ -90,14 +147,14 @@ function RevealPage() {
 
     const frame = () => {
       confetti({
-        particleCount: 3,
+        particleCount: Math.ceil(intensity.particleCount / 50),
         angle: 60,
         spread: 55,
         origin: { x: 0, y: 0.8 },
         colors
       });
       confetti({
-        particleCount: 3,
+        particleCount: Math.ceil(intensity.particleCount / 50),
         angle: 120,
         spread: 55,
         origin: { x: 1, y: 0.8 },
@@ -115,6 +172,64 @@ function RevealPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Spinner size="large" color="white" />
+      </div>
+    );
+  }
+
+  // Password required
+  if (step === 'password') {
+    return (
+      <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-md">
+          <Card className="text-center">
+            <div className="mb-4 flex justify-center">
+              <svg className="w-16 h-16 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Password Protected</h1>
+            <p className="text-white/60 mb-6">
+              Enter the password to view the reveal
+            </p>
+
+            <div className="space-y-4">
+              <input
+                type="password"
+                placeholder="Enter password"
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  setPasswordError('');
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && verifyPassword()}
+                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 text-center text-lg focus:outline-none focus:border-white/40"
+                autoFocus
+              />
+
+              {passwordError && (
+                <Alert variant="error">{passwordError}</Alert>
+              )}
+
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={verifyPassword}
+                disabled={verifyingPassword}
+              >
+                {verifyingPassword ? 'Verifying...' : 'Continue'}
+              </Button>
+            </div>
+
+            <p className="text-white/40 text-sm mt-6">
+              Ask the parents for the password
+            </p>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -229,42 +344,32 @@ function RevealPage() {
   // Opening animation - flying balloons
   if (step === 'opening') {
     const isBoy = gender === 'boy';
+    const theme = THEME_COLORS[preferences.theme] || THEME_COLORS.classic;
+    const intensity = INTENSITY_SETTINGS[preferences.animationIntensity] || INTENSITY_SETTINGS.medium;
 
-    // Color palettes for depth and variety
-    const colors = isBoy
-      ? ['#3b82f6', '#60a5fa', '#2563eb', '#1d4ed8', '#93c5fd']
-      : ['#ec4899', '#f472b6', '#db2777', '#be185d', '#fbcfe8'];
+    // Use theme colors for balloons (pad to 5 colors if needed)
+    const themeColors = isBoy ? theme.boy : theme.girl;
+    const colors = [...themeColors];
+    while (colors.length < 5) {
+      colors.push(themeColors[colors.length % themeColors.length]);
+    }
 
-    const balloonPositions = [
-      // First wave
-      { left: '2%', delay: 0, size: 65, color: 0, speed: 1.3, wobble: 12, rotate: -8 },
-      { left: '7%', delay: 0.08, size: 90, color: 1, speed: 1.15, wobble: 16, rotate: 6 },
-      { left: '12%', delay: 0.02, size: 75, color: 2, speed: 1.25, wobble: 14, rotate: -10 },
-      { left: '17%', delay: 0.12, size: 110, color: 0, speed: 1.0, wobble: 20, rotate: 8 },
-      { left: '22%', delay: 0.05, size: 68, color: 3, speed: 1.35, wobble: 11, rotate: -5 },
-      { left: '27%', delay: 0.15, size: 95, color: 1, speed: 1.08, wobble: 17, rotate: 10 },
-      { left: '32%', delay: 0.03, size: 125, color: 0, speed: 0.95, wobble: 22, rotate: -3 },
-      { left: '37%', delay: 0.1, size: 78, color: 2, speed: 1.22, wobble: 13, rotate: 7 },
-      { left: '42%', delay: 0.06, size: 100, color: 4, speed: 1.1, wobble: 18, rotate: -12 },
-      { left: '47%', delay: 0.14, size: 70, color: 3, speed: 1.3, wobble: 10, rotate: 5 },
-      { left: '52%', delay: 0.01, size: 130, color: 0, speed: 0.92, wobble: 24, rotate: -4 },
-      { left: '57%', delay: 0.09, size: 82, color: 1, speed: 1.18, wobble: 15, rotate: 9 },
-      { left: '62%', delay: 0.04, size: 105, color: 2, speed: 1.05, wobble: 19, rotate: -8 },
-      { left: '67%', delay: 0.16, size: 72, color: 4, speed: 1.28, wobble: 12, rotate: 6 },
-      { left: '72%', delay: 0.07, size: 115, color: 0, speed: 1.02, wobble: 21, rotate: -6 },
-      { left: '77%', delay: 0.11, size: 66, color: 3, speed: 1.32, wobble: 10, rotate: 11 },
-      { left: '82%', delay: 0.03, size: 98, color: 1, speed: 1.12, wobble: 16, rotate: -9 },
-      { left: '87%', delay: 0.13, size: 85, color: 2, speed: 1.2, wobble: 14, rotate: 4 },
-      { left: '92%', delay: 0.06, size: 108, color: 0, speed: 1.06, wobble: 18, rotate: -7 },
-      { left: '97%', delay: 0.1, size: 74, color: 4, speed: 1.26, wobble: 13, rotate: 8 },
-    ];
+    // Generate balloon positions based on intensity
+    const balloonCount = intensity.balloonCount;
+    const balloonPositions = Array.from({ length: balloonCount }, (_, i) => ({
+      left: `${(i / balloonCount) * 100 + Math.random() * 3}%`,
+      delay: (i % 5) * 0.03 + Math.random() * 0.05,
+      size: 65 + Math.random() * 65,
+      color: i % colors.length,
+      speed: 0.9 + Math.random() * 0.5,
+      wobble: 10 + Math.random() * 15,
+      rotate: -12 + Math.random() * 24,
+    }));
+
+    const openingBg = isBoy ? theme.openingBgBoy : theme.openingBgGirl;
 
     return (
-      <div className={`min-h-screen w-full fixed inset-0 overflow-hidden ${
-        isBoy
-          ? 'bg-gradient-to-b from-blue-500 via-blue-600 to-blue-900'
-          : 'bg-gradient-to-b from-pink-400 via-pink-600 to-pink-900'
-      }`}>
+      <div className={`min-h-screen w-full fixed inset-0 overflow-hidden bg-gradient-to-b ${openingBg}`}>
         {/* Animated background particles */}
         <div className="absolute inset-0 overflow-hidden">
           {[...Array(20)].map((_, i) => (
@@ -416,30 +521,41 @@ function RevealPage() {
   // Final reveal
   if (step === 'reveal') {
     const isBoy = gender === 'boy';
+    const theme = THEME_COLORS[preferences.theme] || THEME_COLORS.classic;
+    const bgGradient = isBoy ? theme.bgBoy : theme.bgGirl;
+    const glowClass = isBoy ? theme.glowBoy : theme.glowGirl;
+    const customMessage = preferences.customMessage || 'Congratulations!';
 
     return (
-      <div className={`min-h-screen relative overflow-hidden flex items-center justify-center ${
-        isBoy ? 'bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-900' : 'bg-gradient-to-br from-pink-900 via-pink-800 to-rose-900'
-      }`}>
+      <div className={`min-h-screen relative overflow-hidden flex items-center justify-center bg-gradient-to-br ${bgGradient}`}>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className={`absolute top-20 left-10 w-72 h-72 ${isBoy ? 'bg-blue-400/30' : 'bg-pink-400/30'} rounded-full blur-3xl animate-pulse`} />
-          <div className={`absolute bottom-20 right-10 w-96 h-96 ${isBoy ? 'bg-cyan-400/30' : 'bg-rose-400/30'} rounded-full blur-3xl animate-pulse`} />
-          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[600px] h-[600px] ${isBoy ? 'bg-blue-500/20' : 'bg-pink-500/20'} rounded-full blur-3xl`} />
+          <div className={`absolute top-20 left-10 w-72 h-72 ${glowClass} rounded-full blur-3xl animate-pulse`} />
+          <div className={`absolute bottom-20 right-10 w-96 h-96 ${glowClass} rounded-full blur-3xl animate-pulse`} />
+          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[600px] h-[600px] ${glowClass} rounded-full blur-3xl`} style={{ opacity: 0.5 }} />
         </div>
 
         <div className="relative z-10 text-center">
-          <p className={`text-2xl md:text-3xl font-medium mb-4 animate-float-up ${isBoy ? 'text-blue-200' : 'text-pink-200'}`}>
-            It's a
+          <p className="text-2xl md:text-3xl font-medium mb-4 animate-float-up text-white/80">
+            {preferences.babyCount === 1 ? "It's a" : `It's ${preferences.babyCount === 2 ? 'Twin' : 'Triplet'}`}
           </p>
 
-          <div className="text-9xl md:text-[12rem] mb-6 animate-burst-in">
-            {isBoy ? '👦' : '👧'}
+          <div className={`mb-6 animate-burst-in flex justify-center ${preferences.babyCount > 1 ? 'gap-2 md:gap-4' : ''}`}>
+            {Array.from({ length: preferences.babyCount || 1 }).map((_, i) => (
+              <span
+                key={i}
+                className={preferences.babyCount > 1 ? 'text-7xl md:text-9xl' : 'text-9xl md:text-[12rem]'}
+                style={{ animationDelay: `${i * 0.1}s` }}
+              >
+                {isBoy ? (preferences.boyEmoji || '👦') : (preferences.girlEmoji || '👧')}
+              </span>
+            ))}
           </div>
 
-          <h1 className={`text-6xl md:text-8xl font-bold mb-8 text-shadow-lg animate-float-up ${
-            isBoy ? 'text-blue-100' : 'text-pink-100'
-          }`} style={{ animationDelay: '0.2s' }}>
-            {isBoy ? 'BOY!' : 'GIRL!'}
+          <h1 className="text-6xl md:text-8xl font-bold mb-8 text-shadow-lg animate-float-up text-white"
+              style={{ animationDelay: '0.2s' }}>
+            {isBoy
+              ? (preferences.babyCount === 1 ? 'BOY!' : 'BOYS!')
+              : (preferences.babyCount === 1 ? 'GIRL!' : 'GIRLS!')}
           </h1>
 
           {/* Celebration emojis */}
@@ -458,17 +574,13 @@ function RevealPage() {
             ))}
           </div>
 
-          <p className={`text-3xl md:text-4xl font-script mb-12 animate-float-up ${isBoy ? 'text-blue-200' : 'text-pink-200'}`}
+          <p className="text-3xl md:text-4xl font-script mb-12 animate-float-up text-white/90"
              style={{ animationDelay: '0.4s' }}>
-            Congratulations!
+            {customMessage}
           </p>
 
           <button
-            className={`py-4 px-8 rounded-full font-semibold text-lg transition-all duration-300 hover:scale-105 animate-float-up ${
-              isBoy
-                ? 'bg-blue-500/30 hover:bg-blue-500/50 text-blue-100 border border-blue-400/30'
-                : 'bg-pink-500/30 hover:bg-pink-500/50 text-pink-100 border border-pink-400/30'
-            }`}
+            className="py-4 px-8 rounded-full font-semibold text-lg transition-all duration-300 hover:scale-105 animate-float-up bg-white/20 hover:bg-white/30 text-white border border-white/30"
             style={{ animationDelay: '0.6s' }}
             onClick={() => triggerConfetti(gender)}
           >
