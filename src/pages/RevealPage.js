@@ -26,13 +26,13 @@ function RevealPage() {
 
   const onCountdownComplete = useCallback(() => {
     setStep('opening');
+    // Play celebration sound immediately when balloon animation starts
+    if (preferences.soundEnabled) {
+      const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
+      playCelebration(customCelebrationAudio);
+    }
     setTimeout(() => {
       setStep('reveal');
-      // Play celebration sound when reveal shows (after balloons)
-      if (preferences.soundEnabled) {
-        const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
-        playCelebration(customCelebrationAudio);
-      }
       triggerConfetti(gender, false); // Don't play sound in triggerConfetti, already handled above
     }, 1200);
   }, [gender, preferences, playCelebration]);
