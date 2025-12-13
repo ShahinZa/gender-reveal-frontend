@@ -103,11 +103,24 @@ const useAudio = () => {
     try {
       // Fetch audio data directly - gives us full control, no browser retries
       const response = await fetch(src);
+
+      // Log response details for debugging
+      const contentType = response.headers.get('content-type');
+      const contentEncoding = response.headers.get('content-encoding');
+      console.log(`Drumroll fetch: status=${response.status}, type=${contentType}, encoding=${contentEncoding}`);
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
       const blob = await response.blob();
+      console.log(`Drumroll blob: ${blob.size} bytes, type=${blob.type}`);
+
+      // Validate blob has data
+      if (blob.size === 0) {
+        throw new Error('Empty response');
+      }
+
       const blobUrl = URL.createObjectURL(blob);
 
       // Create audio element with blob URL (no network requests)
@@ -124,6 +137,7 @@ const useAudio = () => {
 
       drumrollRef.current = audio;
       setDrumrollStatus('ready');
+      console.log('Drumroll preload successful');
     } catch (error) {
       console.log('Drumroll preload failed:', error.message);
       drumrollRef.current = null;
@@ -163,11 +177,24 @@ const useAudio = () => {
     try {
       // Fetch audio data directly - gives us full control, no browser retries
       const response = await fetch(src);
+
+      // Log response details for debugging
+      const contentType = response.headers.get('content-type');
+      const contentEncoding = response.headers.get('content-encoding');
+      console.log(`Celebration fetch: status=${response.status}, type=${contentType}, encoding=${contentEncoding}`);
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
       const blob = await response.blob();
+      console.log(`Celebration blob: ${blob.size} bytes, type=${blob.type}`);
+
+      // Validate blob has data
+      if (blob.size === 0) {
+        throw new Error('Empty response');
+      }
+
       const blobUrl = URL.createObjectURL(blob);
 
       // Create audio element with blob URL (no network requests)
@@ -184,6 +211,7 @@ const useAudio = () => {
 
       celebrationRef.current = audio;
       setCelebrationStatus('ready');
+      console.log('Celebration preload successful');
     } catch (error) {
       console.log('Celebration preload failed:', error.message);
       celebrationRef.current = null;
