@@ -735,17 +735,19 @@ function RevealPage() {
 
             {/* Audio preload status indicator - subtle, non-blocking */}
             {preferences.soundEnabled && audioStatus !== 'idle' && (
-              <div className="flex items-center justify-center gap-1.5 mt-4" title={audioStatus === 'loading' ? 'Loading audio...' : 'Audio ready'}>
-                <svg className="w-3 h-3 text-white/40" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
-                </svg>
+              <div className="flex items-center justify-center gap-1.5 mt-3">
                 <span
-                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
                     audioStatus === 'loading'
-                      ? 'bg-amber-400 animate-pulse'
-                      : 'bg-green-400'
+                      ? 'bg-amber-400/80 animate-pulse'
+                      : 'bg-emerald-400/80'
                   }`}
                 />
+                <span className={`text-[10px] tracking-wide transition-colors duration-300 ${
+                  audioStatus === 'loading' ? 'text-white/30' : 'text-white/40'
+                }`}>
+                  {audioStatus === 'loading' ? 'Loading sounds' : 'Sounds ready'}
+                </span>
               </div>
             )}
 
