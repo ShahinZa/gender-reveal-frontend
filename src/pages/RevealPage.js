@@ -876,16 +876,75 @@ function RevealPage() {
             {displayValues.babyCount === 1 ? "It's a" : `It's ${displayValues.babyCount === 2 ? 'Twin' : 'Triplet'}`}
           </p>
 
-          <div className={`mb-6 animate-burst-in flex justify-center ${displayValues.babyCount > 1 ? 'gap-2 md:gap-4' : ''}`}>
-            {Array.from({ length: displayValues.babyCount }).map((_, i) => (
-              <span
-                key={i}
-                className={displayValues.babyCount > 1 ? 'text-7xl md:text-9xl' : 'text-9xl md:text-[12rem]'}
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                {displayValues.emoji}
-              </span>
-            ))}
+          {/* Main emoji with sparkles */}
+          <div className="relative mb-6">
+            {/* Sparkle particles around emoji */}
+            {[...Array(12)].map((_, i) => {
+              const positions = [
+                { top: '5%', left: '15%' },
+                { top: '0%', left: '50%' },
+                { top: '5%', right: '15%' },
+                { top: '25%', left: '0%' },
+                { top: '25%', right: '0%' },
+                { top: '50%', left: '-5%' },
+                { top: '50%', right: '-5%' },
+                { top: '75%', left: '5%' },
+                { top: '75%', right: '5%' },
+                { bottom: '5%', left: '20%' },
+                { bottom: '0%', left: '50%' },
+                { bottom: '5%', right: '20%' },
+              ];
+              const delays = [0.3, 0.5, 0.4, 0.7, 0.6, 0.9, 0.8, 1.1, 1.0, 1.3, 1.2, 1.4];
+              const sizes = [8, 10, 7, 6, 7, 9, 8, 6, 7, 8, 9, 7];
+              return (
+                <motion.div
+                  key={`emoji-sparkle-${i}`}
+                  className="absolute pointer-events-none z-10"
+                  style={positions[i]}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{
+                    opacity: [0, 1, 1, 0],
+                    scale: [0, 1, 1, 0],
+                    rotate: [0, 180],
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: delays[i],
+                    repeat: Infinity,
+                    repeatDelay: 2.5 + (i % 4) * 0.4,
+                    ease: 'easeOut',
+                  }}
+                >
+                  <svg width={sizes[i] * 2} height={sizes[i] * 2} viewBox="0 0 24 24" className={isBoy ? 'text-blue-200' : 'text-pink-200'}>
+                    <path
+                      fill="currentColor"
+                      d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z"
+                    />
+                  </svg>
+                </motion.div>
+              );
+            })}
+
+            {/* Emoji container */}
+            <div className={`animate-burst-in flex justify-center ${displayValues.babyCount > 1 ? 'gap-2 md:gap-4' : ''}`}>
+              {Array.from({ length: displayValues.babyCount }).map((_, i) => (
+                <motion.span
+                  key={i}
+                  className={displayValues.babyCount > 1 ? 'text-7xl md:text-9xl' : 'text-9xl md:text-[12rem]'}
+                  initial={{ scale: 0, rotate: -10 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{
+                    duration: 0.6,
+                    delay: 0.1 + i * 0.1,
+                    type: 'spring',
+                    stiffness: 200,
+                    damping: 12,
+                  }}
+                >
+                  {displayValues.emoji}
+                </motion.span>
+              ))}
+            </div>
           </div>
 
           <h1 className="text-6xl md:text-8xl font-bold mb-8 text-shadow-lg animate-float-up text-white"
