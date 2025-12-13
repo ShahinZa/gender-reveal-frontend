@@ -243,11 +243,6 @@ function Home() {
                   </>
                 )}
               </div>
-              {!isAuthenticated && (
-                <p className="text-white/30 text-xs text-center mt-10">
-                  Simple. Secure. Always free.
-                </p>
-              )}
             </div>
 
             {/* Our Promise */}
