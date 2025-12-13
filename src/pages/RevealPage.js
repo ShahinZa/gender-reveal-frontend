@@ -893,50 +893,124 @@ function RevealPage() {
             {displayValues.babyCount === 1 ? displayValues.genderText : displayValues.genderTextPlural}!
           </h1>
 
-          {/* Celebration divider - enhanced heart animation */}
-          <div className="flex items-center justify-center gap-4 mb-8">
-            {/* Left line with glow effect */}
-            <div className="relative">
+          {/* Celebration divider - premium animation with sparkles */}
+          <div className="flex items-center justify-center gap-4 mb-8 relative">
+            {/* Left line with glow and shimmer */}
+            <div className="relative h-8 flex items-center">
+              {/* Soft glow underneath */}
               <motion.div
-                className={`h-[2px] rounded-full ${isBoy ? 'bg-gradient-to-r from-transparent via-blue-300/60 to-blue-400/80' : 'bg-gradient-to-r from-transparent via-pink-300/60 to-pink-400/80'}`}
+                className={`absolute h-4 rounded-full blur-lg ${isBoy ? 'bg-blue-400/20' : 'bg-pink-400/20'}`}
                 initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 80, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.4, ease: [0.23, 1, 0.32, 1] }}
+                animate={{ width: 100, opacity: 1 }}
+                transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
               />
-              {/* Shimmer overlay */}
+              {/* Main line */}
               <motion.div
-                className="absolute inset-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                initial={{ x: -80, opacity: 0 }}
-                animate={{ x: 80, opacity: [0, 1, 0] }}
-                transition={{ duration: 1.2, delay: 1, ease: 'easeInOut' }}
+                className={`relative h-[2px] rounded-full ${isBoy ? 'bg-gradient-to-r from-transparent via-blue-300/70 to-blue-400' : 'bg-gradient-to-r from-transparent via-pink-300/70 to-pink-400'}`}
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 100, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              />
+              {/* Shimmer pass 1 */}
+              <motion.div
+                className="absolute h-[2px] w-8 rounded-full bg-gradient-to-r from-transparent via-white/60 to-transparent"
+                initial={{ left: -32, opacity: 0 }}
+                animate={{ left: 100, opacity: [0, 1, 1, 0] }}
+                transition={{ duration: 0.8, delay: 1.1, ease: 'easeInOut' }}
+              />
+              {/* Shimmer pass 2 (subtle repeat) */}
+              <motion.div
+                className="absolute h-[2px] w-6 rounded-full bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                animate={{ left: [-24, 100] }}
+                transition={{ duration: 2, delay: 3, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
               />
             </div>
 
-            {/* Hearts with enhanced animation */}
-            <div className="flex items-center gap-2">
+            {/* Hearts container with sparkles */}
+            <div className="relative flex items-center gap-3 px-2">
+              {/* Sparkle particles - positioned around hearts */}
+              {[...Array(8)].map((_, i) => {
+                const positions = [
+                  { top: '-8px', left: '10%' },
+                  { top: '-4px', right: '15%' },
+                  { bottom: '-6px', left: '25%' },
+                  { top: '50%', left: '-8px' },
+                  { top: '50%', right: '-8px' },
+                  { bottom: '-8px', right: '20%' },
+                  { top: '-10px', left: '50%' },
+                  { bottom: '-10px', left: '45%' },
+                ];
+                const delays = [1.5, 2.1, 1.8, 2.4, 2.7, 1.9, 2.2, 2.5];
+                const sizes = [4, 3, 5, 3, 4, 3, 4, 3];
+                return (
+                  <motion.div
+                    key={`sparkle-${i}`}
+                    className="absolute pointer-events-none"
+                    style={positions[i]}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{
+                      opacity: [0, 1, 1, 0],
+                      scale: [0, 1, 1, 0],
+                      rotate: [0, 180],
+                    }}
+                    transition={{
+                      duration: 0.7,
+                      delay: delays[i],
+                      repeat: Infinity,
+                      repeatDelay: 2 + (i % 3) * 0.5,
+                      ease: 'easeOut',
+                    }}
+                  >
+                    {/* 4-point star sparkle */}
+                    <svg width={sizes[i] * 2} height={sizes[i] * 2} viewBox="0 0 24 24" className={isBoy ? 'text-blue-200' : 'text-pink-200'}>
+                      <path
+                        fill="currentColor"
+                        d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z"
+                      />
+                    </svg>
+                  </motion.div>
+                );
+              })}
+
+              {/* Hearts with wave float animation */}
               {displayValues.celebrationEmojis.map((emoji, i) => (
                 <motion.div
                   key={i}
                   className="relative"
-                  initial={{ opacity: 0, scale: 0, y: 20 }}
+                  initial={{ opacity: 0, scale: 0, y: 30, rotate: -20 }}
                   animate={{
                     opacity: 1,
                     scale: 1,
                     y: 0,
+                    rotate: 0,
                   }}
                   transition={{
-                    duration: 0.5,
-                    delay: 0.6 + i * 0.12,
+                    duration: 0.6,
+                    delay: 0.5 + i * 0.1,
                     type: 'spring',
-                    stiffness: 200,
-                    damping: 12,
+                    stiffness: 260,
+                    damping: 15,
                   }}
                 >
-                  {/* Soft glow behind heart */}
+                  {/* Outer glow ring */}
                   <motion.div
-                    className={`absolute inset-0 rounded-full blur-md ${isBoy ? 'bg-blue-400/30' : 'bg-pink-400/30'}`}
+                    className={`absolute -inset-2 rounded-full blur-xl ${isBoy ? 'bg-blue-400/20' : 'bg-pink-400/20'}`}
                     animate={{
-                      scale: [1, 1.4, 1],
+                      scale: [1, 1.5, 1],
+                      opacity: [0.2, 0.4, 0.2],
+                    }}
+                    transition={{
+                      duration: 3,
+                      delay: 1.2 + i * 0.4,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  />
+                  {/* Inner glow */}
+                  <motion.div
+                    className={`absolute -inset-1 rounded-full blur-md ${isBoy ? 'bg-blue-300/30' : 'bg-pink-300/30'}`}
+                    animate={{
+                      scale: [1, 1.3, 1],
                       opacity: [0.3, 0.5, 0.3],
                     }}
                     transition={{
@@ -946,26 +1020,19 @@ function RevealPage() {
                       ease: 'easeInOut',
                     }}
                   />
-                  {/* Heart with float and pulse */}
+                  {/* Heart with coordinated wave motion */}
                   <motion.span
                     className="relative text-2xl md:text-3xl block"
                     animate={{
-                      y: [0, -4, 0],
-                      scale: [1, 1.08, 1],
+                      y: [0, -6, 0, -3, 0],
+                      scale: [1, 1.1, 1, 1.05, 1],
+                      rotate: [0, 3, 0, -2, 0],
                     }}
                     transition={{
-                      y: {
-                        duration: 2,
-                        delay: 1.2 + i * 0.2,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                      },
-                      scale: {
-                        duration: 2.5,
-                        delay: 1 + i * 0.3,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                      },
+                      duration: 4,
+                      delay: 1.2 + i * 0.25,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
                     }}
                   >
                     {emoji}
@@ -974,20 +1041,34 @@ function RevealPage() {
               ))}
             </div>
 
-            {/* Right line with glow effect */}
-            <div className="relative">
+            {/* Right line with glow and shimmer */}
+            <div className="relative h-8 flex items-center">
+              {/* Soft glow underneath */}
               <motion.div
-                className={`h-[2px] rounded-full ${isBoy ? 'bg-gradient-to-l from-transparent via-blue-300/60 to-blue-400/80' : 'bg-gradient-to-l from-transparent via-pink-300/60 to-pink-400/80'}`}
+                className={`absolute h-4 rounded-full blur-lg ${isBoy ? 'bg-blue-400/20' : 'bg-pink-400/20'}`}
                 initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 80, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.4, ease: [0.23, 1, 0.32, 1] }}
+                animate={{ width: 100, opacity: 1 }}
+                transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
               />
-              {/* Shimmer overlay */}
+              {/* Main line */}
               <motion.div
-                className="absolute inset-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                initial={{ x: 80, opacity: 0 }}
-                animate={{ x: -80, opacity: [0, 1, 0] }}
-                transition={{ duration: 1.2, delay: 1, ease: 'easeInOut' }}
+                className={`relative h-[2px] rounded-full ${isBoy ? 'bg-gradient-to-l from-transparent via-blue-300/70 to-blue-400' : 'bg-gradient-to-l from-transparent via-pink-300/70 to-pink-400'}`}
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 100, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              />
+              {/* Shimmer pass 1 */}
+              <motion.div
+                className="absolute h-[2px] w-8 rounded-full bg-gradient-to-r from-transparent via-white/60 to-transparent"
+                initial={{ right: -32, opacity: 0 }}
+                animate={{ right: 100, opacity: [0, 1, 1, 0] }}
+                transition={{ duration: 0.8, delay: 1.1, ease: 'easeInOut' }}
+              />
+              {/* Shimmer pass 2 (subtle repeat) */}
+              <motion.div
+                className="absolute h-[2px] w-6 rounded-full bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                animate={{ right: [-24, 100] }}
+                transition={{ duration: 2, delay: 3.5, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
               />
             </div>
           </div>
