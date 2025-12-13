@@ -73,13 +73,13 @@ const useAudio = () => {
 
   /**
    * Preload drumroll audio for instant playback later
-   * Call this early (e.g., when page loads with preferences)
+   * Uses fetch() to download audio, then creates blob URL to prevent browser retry loops
    * @param {string|null} audioUrl - URL to preload (null uses default)
    */
-  const preloadDrumroll = useCallback((audioUrl = null) => {
+  const preloadDrumroll = useCallback(async (audioUrl = null) => {
     const src = audioUrl || '/drumroll.mp3';
 
-    // Skip if already preloaded with same URL (and not in error state)
+    // Skip if already preloaded with same URL
     if (preloadedDrumrollUrl.current === src && drumrollRef.current) {
       return;
     }
@@ -89,54 +89,57 @@ const useAudio = () => {
       return;
     }
 
+    // Mark URL immediately to prevent duplicate calls
+    preloadedDrumrollUrl.current = src;
+
+    // Clean up previous
+    if (drumrollRef.current) {
+      drumrollRef.current.pause();
+      drumrollRef.current = null;
+    }
+
+    setDrumrollStatus('loading');
+
     try {
-      // Clean up previous
-      if (drumrollRef.current) {
-        drumrollRef.current.pause();
-        drumrollRef.current.src = ''; // Stop any pending requests
-        drumrollRef.current = null;
+      // Fetch audio data directly - gives us full control, no browser retries
+      const response = await fetch(src);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
 
-      setDrumrollStatus('loading');
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
 
-      // Create and preload
+      // Create audio element with blob URL (no network requests)
       const audio = new Audio();
-      audio.preload = 'auto';
       audio.volume = 0.8;
-      audio.crossOrigin = 'anonymous';
+      audio.src = blobUrl;
 
-      // Track when ready to play
-      audio.addEventListener('canplaythrough', () => {
-        setDrumrollStatus('ready');
-      }, { once: true });
-
-      // On error, clean up to prevent retry loops
-      audio.addEventListener('error', (e) => {
-        console.log('Drumroll preload error:', e.target?.error?.message || 'unknown');
-        audio.src = ''; // Prevent browser retry
-        drumrollRef.current = null;
-        setDrumrollStatus('error');
-      }, { once: true });
-
-      audio.src = src;
-      audio.load();
+      // Wait for audio to be ready
+      await new Promise((resolve, reject) => {
+        audio.addEventListener('canplaythrough', resolve, { once: true });
+        audio.addEventListener('error', () => reject(new Error('Audio decode failed')), { once: true });
+        audio.load();
+      });
 
       drumrollRef.current = audio;
-      preloadedDrumrollUrl.current = src;
+      setDrumrollStatus('ready');
     } catch (error) {
-      console.log('Audio preload not supported:', error.message);
+      console.log('Drumroll preload failed:', error.message);
+      drumrollRef.current = null;
       setDrumrollStatus('error');
     }
   }, [drumrollStatus]);
 
   /**
    * Preload celebration audio for instant playback later
+   * Uses fetch() to download audio, then creates blob URL to prevent browser retry loops
    * @param {string|null} audioUrl - URL to preload (null uses default)
    */
-  const preloadCelebration = useCallback((audioUrl = null) => {
+  const preloadCelebration = useCallback(async (audioUrl = null) => {
     const src = audioUrl || '/celebration.mp3';
 
-    // Skip if already preloaded with same URL (and not in error state)
+    // Skip if already preloaded with same URL
     if (preloadedCelebrationUrl.current === src && celebrationRef.current) {
       return;
     }
@@ -146,42 +149,44 @@ const useAudio = () => {
       return;
     }
 
+    // Mark URL immediately to prevent duplicate calls
+    preloadedCelebrationUrl.current = src;
+
+    // Clean up previous
+    if (celebrationRef.current) {
+      celebrationRef.current.pause();
+      celebrationRef.current = null;
+    }
+
+    setCelebrationStatus('loading');
+
     try {
-      // Clean up previous
-      if (celebrationRef.current) {
-        celebrationRef.current.pause();
-        celebrationRef.current.src = ''; // Stop any pending requests
-        celebrationRef.current = null;
+      // Fetch audio data directly - gives us full control, no browser retries
+      const response = await fetch(src);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
 
-      setCelebrationStatus('loading');
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
 
-      // Create and preload
+      // Create audio element with blob URL (no network requests)
       const audio = new Audio();
-      audio.preload = 'auto';
       audio.volume = 0.8;
-      audio.crossOrigin = 'anonymous';
+      audio.src = blobUrl;
 
-      // Track when ready to play
-      audio.addEventListener('canplaythrough', () => {
-        setCelebrationStatus('ready');
-      }, { once: true });
-
-      // On error, clean up to prevent retry loops
-      audio.addEventListener('error', (e) => {
-        console.log('Celebration preload error:', e.target?.error?.message || 'unknown');
-        audio.src = ''; // Prevent browser retry
-        celebrationRef.current = null;
-        setCelebrationStatus('error');
-      }, { once: true });
-
-      audio.src = src;
-      audio.load();
+      // Wait for audio to be ready
+      await new Promise((resolve, reject) => {
+        audio.addEventListener('canplaythrough', resolve, { once: true });
+        audio.addEventListener('error', () => reject(new Error('Audio decode failed')), { once: true });
+        audio.load();
+      });
 
       celebrationRef.current = audio;
-      preloadedCelebrationUrl.current = src;
+      setCelebrationStatus('ready');
     } catch (error) {
-      console.log('Audio preload not supported:', error.message);
+      console.log('Celebration preload failed:', error.message);
+      celebrationRef.current = null;
       setCelebrationStatus('error');
     }
   }, [celebrationStatus]);
