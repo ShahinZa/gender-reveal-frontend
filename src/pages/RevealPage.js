@@ -872,7 +872,7 @@ function RevealPage() {
         </div>
 
         <div className="relative z-10 text-center">
-          <p className="text-2xl md:text-3xl font-medium mb-4 animate-float-up text-white/80">
+          <p className="text-2xl md:text-3xl font-medium mb-8 animate-float-up text-white/80">
             {displayValues.babyCount === 1 ? "It's a" : `It's ${displayValues.babyCount === 2 ? 'Twin' : 'Triplet'}`}
           </p>
 
