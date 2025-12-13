@@ -791,6 +791,24 @@ function RevealPage() {
               <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
 
+            {/* Audio preload status indicator */}
+            {preferences.soundEnabled && audioStatus !== 'idle' && (
+              <div className="flex items-center justify-center gap-1.5 mt-6">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                    audioStatus === 'loading'
+                      ? 'bg-amber-400/80 animate-pulse'
+                      : 'bg-emerald-400/80'
+                  }`}
+                />
+                <span className={`text-[10px] tracking-wide transition-colors duration-300 ${
+                  audioStatus === 'loading' ? 'text-white/30' : 'text-white/40'
+                }`}>
+                  {audioStatus === 'loading' ? 'Loading sounds' : 'Sounds ready'}
+                </span>
+              </div>
+            )}
+
             {/* Host login prompt */}
             <div className="mt-8 pt-6 border-t border-white/10">
               <p className="text-white/40 text-sm mb-3">Are you the host?</p>
