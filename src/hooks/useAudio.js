@@ -44,6 +44,8 @@ const useAudio = () => {
       const audio = new Audio();
       audio.preload = 'auto';
       audio.volume = 0.8;
+      // Enable CORS for cross-origin audio (frontend and backend on different domains)
+      audio.crossOrigin = 'anonymous';
 
       // Track when ready to play
       audio.addEventListener('canplaythrough', () => {
@@ -90,6 +92,8 @@ const useAudio = () => {
       const audio = new Audio();
       audio.preload = 'auto';
       audio.volume = 0.8;
+      // Enable CORS for cross-origin audio (frontend and backend on different domains)
+      audio.crossOrigin = 'anonymous';
 
       // Track when ready to play
       audio.addEventListener('canplaythrough', () => {
@@ -135,8 +139,11 @@ const useAudio = () => {
         if (drumrollRef.current) {
           drumrollRef.current.pause();
         }
-        drumrollRef.current = new Audio(src);
-        drumrollRef.current.volume = 0.8;
+        const audio = new Audio();
+        audio.crossOrigin = 'anonymous';
+        audio.volume = 0.8;
+        audio.src = src;
+        drumrollRef.current = audio;
         preloadedDrumrollUrl.current = src;
       }
 
@@ -184,8 +191,11 @@ const useAudio = () => {
         if (celebrationRef.current) {
           celebrationRef.current.pause();
         }
-        celebrationRef.current = new Audio(src);
-        celebrationRef.current.volume = 0.8;
+        const audio = new Audio();
+        audio.crossOrigin = 'anonymous';
+        audio.volume = 0.8;
+        audio.src = src;
+        celebrationRef.current = audio;
         preloadedCelebrationUrl.current = src;
       }
 
