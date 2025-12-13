@@ -59,10 +59,12 @@ const useAudio = () => {
     preloadState.drumroll.url = audioUrl;
     preloadState.drumroll.done = true;
 
+    console.log('Preloading drumroll:', audioUrl);
     setDrumrollStatus('loading');
 
     try {
       const response = await fetch(audioUrl);
+      console.log('Drumroll response:', response.status, response.headers.get('content-type'));
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const contentType = response.headers.get('content-type') || '';
@@ -104,10 +106,12 @@ const useAudio = () => {
     preloadState.celebration.url = audioUrl;
     preloadState.celebration.done = true;
 
+    console.log('Preloading celebration:', audioUrl);
     setCelebrationStatus('loading');
 
     try {
       const response = await fetch(audioUrl);
+      console.log('Celebration response:', response.status, response.headers.get('content-type'));
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const contentType = response.headers.get('content-type') || '';
