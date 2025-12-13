@@ -894,36 +894,64 @@ function RevealPage() {
           </h1>
 
           {/* Celebration divider - premium animation with sparkles */}
-          <div className="flex items-center justify-center gap-4 mb-8 relative">
-            {/* Left line with glow and shimmer */}
-            <div className="relative h-8 flex items-center">
-              {/* Soft glow underneath */}
-              <motion.div
-                className={`absolute h-4 rounded-full blur-lg ${isBoy ? 'bg-blue-400/20' : 'bg-pink-400/20'}`}
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 100, opacity: 1 }}
-                transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
-              />
-              {/* Main line */}
-              <motion.div
-                className={`relative h-[2px] rounded-full ${isBoy ? 'bg-gradient-to-r from-transparent via-blue-300/70 to-blue-400' : 'bg-gradient-to-r from-transparent via-pink-300/70 to-pink-400'}`}
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 100, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              />
-              {/* Shimmer pass 1 */}
-              <motion.div
-                className="absolute h-[2px] w-8 rounded-full bg-gradient-to-r from-transparent via-white/60 to-transparent"
-                initial={{ left: -32, opacity: 0 }}
-                animate={{ left: 100, opacity: [0, 1, 1, 0] }}
-                transition={{ duration: 0.8, delay: 1.1, ease: 'easeInOut' }}
-              />
-              {/* Shimmer pass 2 (subtle repeat) */}
-              <motion.div
-                className="absolute h-[2px] w-6 rounded-full bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                animate={{ left: [-24, 100] }}
-                transition={{ duration: 2, delay: 3, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
-              />
+          <div className="flex items-center justify-center gap-2 mb-8 relative">
+            {/* Left side - flowing orbs emanating outward */}
+            <div className="flex items-center gap-1.5">
+              {[...Array(4)].map((_, i) => {
+                const sizes = [3, 4, 5, 6]; // Grow towards center
+                const opacities = [0.3, 0.45, 0.6, 0.8];
+                const delays = [0.9, 0.75, 0.6, 0.45]; // Appear from center outward
+                const idx = 3 - i; // Reverse index for left side
+                return (
+                  <motion.div
+                    key={`left-orb-${i}`}
+                    className="relative"
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{
+                      duration: 0.4,
+                      delay: delays[idx],
+                      type: 'spring',
+                      stiffness: 300,
+                      damping: 15,
+                    }}
+                  >
+                    {/* Outer glow */}
+                    <motion.div
+                      className={`absolute inset-0 rounded-full blur-sm ${isBoy ? 'bg-blue-400' : 'bg-pink-400'}`}
+                      style={{ opacity: opacities[idx] * 0.5 }}
+                      animate={{
+                        scale: [1, 1.5, 1],
+                        opacity: [opacities[idx] * 0.3, opacities[idx] * 0.6, opacities[idx] * 0.3],
+                      }}
+                      transition={{
+                        duration: 2 + idx * 0.3,
+                        delay: 1.2 + idx * 0.15,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                    {/* Core orb */}
+                    <motion.div
+                      className={`rounded-full ${isBoy ? 'bg-blue-300' : 'bg-pink-300'}`}
+                      style={{
+                        width: sizes[idx] * 2,
+                        height: sizes[idx] * 2,
+                        opacity: opacities[idx],
+                      }}
+                      animate={{
+                        scale: [1, 1.15, 1],
+                      }}
+                      transition={{
+                        duration: 2.5 + idx * 0.2,
+                        delay: 1.3 + idx * 0.1,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                  </motion.div>
+                );
+              })}
             </div>
 
             {/* Hearts container with sparkles */}
@@ -1041,35 +1069,62 @@ function RevealPage() {
               ))}
             </div>
 
-            {/* Right line with glow and shimmer */}
-            <div className="relative h-8 flex items-center">
-              {/* Soft glow underneath */}
-              <motion.div
-                className={`absolute h-4 rounded-full blur-lg ${isBoy ? 'bg-blue-400/20' : 'bg-pink-400/20'}`}
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 100, opacity: 1 }}
-                transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
-              />
-              {/* Main line */}
-              <motion.div
-                className={`relative h-[2px] rounded-full ${isBoy ? 'bg-gradient-to-l from-transparent via-blue-300/70 to-blue-400' : 'bg-gradient-to-l from-transparent via-pink-300/70 to-pink-400'}`}
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 100, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              />
-              {/* Shimmer pass 1 */}
-              <motion.div
-                className="absolute h-[2px] w-8 rounded-full bg-gradient-to-r from-transparent via-white/60 to-transparent"
-                initial={{ right: -32, opacity: 0 }}
-                animate={{ right: 100, opacity: [0, 1, 1, 0] }}
-                transition={{ duration: 0.8, delay: 1.1, ease: 'easeInOut' }}
-              />
-              {/* Shimmer pass 2 (subtle repeat) */}
-              <motion.div
-                className="absolute h-[2px] w-6 rounded-full bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                animate={{ right: [-24, 100] }}
-                transition={{ duration: 2, delay: 3.5, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
-              />
+            {/* Right side - flowing orbs emanating outward */}
+            <div className="flex items-center gap-1.5">
+              {[...Array(4)].map((_, i) => {
+                const sizes = [6, 5, 4, 3]; // Shrink away from center
+                const opacities = [0.8, 0.6, 0.45, 0.3];
+                const delays = [0.45, 0.6, 0.75, 0.9]; // Appear from center outward
+                return (
+                  <motion.div
+                    key={`right-orb-${i}`}
+                    className="relative"
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{
+                      duration: 0.4,
+                      delay: delays[i],
+                      type: 'spring',
+                      stiffness: 300,
+                      damping: 15,
+                    }}
+                  >
+                    {/* Outer glow */}
+                    <motion.div
+                      className={`absolute inset-0 rounded-full blur-sm ${isBoy ? 'bg-blue-400' : 'bg-pink-400'}`}
+                      style={{ opacity: opacities[i] * 0.5 }}
+                      animate={{
+                        scale: [1, 1.5, 1],
+                        opacity: [opacities[i] * 0.3, opacities[i] * 0.6, opacities[i] * 0.3],
+                      }}
+                      transition={{
+                        duration: 2 + i * 0.3,
+                        delay: 1.2 + i * 0.15,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                    {/* Core orb */}
+                    <motion.div
+                      className={`rounded-full ${isBoy ? 'bg-blue-300' : 'bg-pink-300'}`}
+                      style={{
+                        width: sizes[i] * 2,
+                        height: sizes[i] * 2,
+                        opacity: opacities[i],
+                      }}
+                      animate={{
+                        scale: [1, 1.15, 1],
+                      }}
+                      transition={{
+                        duration: 2.5 + i * 0.2,
+                        delay: 1.3 + i * 0.1,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 
