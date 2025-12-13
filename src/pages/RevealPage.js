@@ -33,6 +33,7 @@ function RevealPage() {
   const socketRef = useRef(null);
   const pollingRef = useRef(null); // Fallback polling
   const spawnHeartRef = useRef(null); // Ref to hold latest spawnHeart function
+  const handleRevealStartedRef = useRef(null); // Ref to hold latest handler
 
   const { playDrumroll, playCelebration, stopAudio } = useAudio();
 
@@ -144,6 +145,9 @@ function RevealPage() {
     }
   }, [preferences, playDrumroll, playCelebration, startCountdown, triggerConfetti]);
 
+  // Keep ref updated so socket listener always uses latest preferences
+  handleRevealStartedRef.current = handleRevealStarted;
+
   // Disconnect WebSocket and cleanup
   const disconnectWebSocket = useCallback(() => {
     if (socketRef.current) {
@@ -203,7 +207,7 @@ function RevealPage() {
     });
 
     socket.on('reveal-started', (data) => {
-      handleRevealStarted(data);
+      handleRevealStartedRef.current?.(data);
     });
 
     // Listen for hearts from other users
@@ -215,7 +219,7 @@ function RevealPage() {
       // Fall back to polling if WebSocket fails
       startFallbackPolling();
     });
-  }, [code, handleRevealStarted, startFallbackPolling]);
+  }, [code, startFallbackPolling]);
 
   // Initialize on mount and cleanup on unmount
   useEffect(() => {
