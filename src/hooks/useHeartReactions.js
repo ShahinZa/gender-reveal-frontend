@@ -53,10 +53,7 @@ const useHeartReactions = ({ socketRef, roomCode, cooldownMs = 250, heartDuratio
 
     // Broadcast to others via WebSocket
     if (socketRef?.current?.connected) {
-      console.log('Sending heart to room:', roomCode);
       socketRef.current.emit('send-heart', roomCode);
-    } else {
-      console.log('Socket not connected, cannot send heart. Socket:', socketRef?.current);
     }
 
     return true;

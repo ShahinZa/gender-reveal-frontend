@@ -173,7 +173,8 @@ function RevealPage() {
         if (data.revealStartedAt) {
           clearInterval(pollingRef.current);
           pollingRef.current = null;
-          handleRevealStarted({
+          // Use ref to always get latest handler with current preferences
+          handleRevealStartedRef.current?.({
             gender: data.gender,
             revealStartedAt: data.revealStartedAt,
             serverTime: data.serverTime,
@@ -183,7 +184,7 @@ function RevealPage() {
         console.error('Polling error:', err);
       }
     }, 1000);
-  }, [code, handleRevealStarted]);
+  }, [code]);
 
   // Connect to WebSocket for real-time synced reveal
   const connectWebSocket = useCallback(() => {
@@ -212,7 +213,6 @@ function RevealPage() {
 
     // Listen for hearts from other users
     socket.on('heart-received', () => {
-      console.log('Heart received from another user!');
       spawnHeartRef.current?.();
     });
 
@@ -260,11 +260,6 @@ function RevealPage() {
 
       // Check if this is the host (owner of the reveal)
       setIsHost(data.isHost || false);
-
-      // Debug: Log host detection result
-      if (data.preferences?.syncedReveal) {
-        console.log('Synced reveal mode:', { isHost: data.isHost, syncedReveal: true });
-      }
 
       // Update viewer count if available
       if (data.viewerCount) {
