@@ -487,19 +487,13 @@ function Dashboard() {
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
 
                 {/* Button content */}
-                <span className="relative flex items-center justify-center gap-3">
-                  {/* Hand/Share icon */}
-                  <svg className="w-5 h-5 md:w-6 md:h-6 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                    <circle cx="18" cy="4" r="3" fill="currentColor" className="text-pink-500" />
-                  </svg>
+                <span className="relative flex items-center justify-center gap-2">
                   <span className="flex flex-col items-start md:flex-row md:items-center md:gap-2">
                     <span className="text-sm md:text-base font-bold">Tap Here</span>
                     <span className="text-xs md:text-sm font-medium text-slate-500">Hand to Whoever Knows the Gender</span>
                   </span>
                   {/* Arrow icon */}
-                  <svg className="w-4 h-4 md:w-5 md:h-5 text-slate-400 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg className="w-4 h-4 md:w-5 md:h-5 text-slate-400 group-hover:translate-x-1 transition-transform flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12h14" />
                     <path d="m12 5 7 7-7 7" />
                   </svg>
