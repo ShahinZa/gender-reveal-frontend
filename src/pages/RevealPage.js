@@ -893,48 +893,103 @@ function RevealPage() {
             {displayValues.babyCount === 1 ? displayValues.genderText : displayValues.genderTextPlural}!
           </h1>
 
-          {/* Celebration divider - subtle heart accents with animation */}
-          <div className="flex items-center justify-center gap-3 mb-8">
-            {/* Left line - expands from center */}
-            <motion.div
-              className={`h-px ${isBoy ? 'bg-gradient-to-r from-transparent to-blue-300/50' : 'bg-gradient-to-r from-transparent to-pink-300/50'}`}
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 64, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.5, ease: 'easeOut' }}
-            />
+          {/* Celebration divider - enhanced heart animation */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            {/* Left line with glow effect */}
+            <div className="relative">
+              <motion.div
+                className={`h-[2px] rounded-full ${isBoy ? 'bg-gradient-to-r from-transparent via-blue-300/60 to-blue-400/80' : 'bg-gradient-to-r from-transparent via-pink-300/60 to-pink-400/80'}`}
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 80, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4, ease: [0.23, 1, 0.32, 1] }}
+              />
+              {/* Shimmer overlay */}
+              <motion.div
+                className="absolute inset-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                initial={{ x: -80, opacity: 0 }}
+                animate={{ x: 80, opacity: [0, 1, 0] }}
+                transition={{ duration: 1.2, delay: 1, ease: 'easeInOut' }}
+              />
+            </div>
 
-            {/* Hearts - fade in with stagger and gentle pulse */}
-            {displayValues.celebrationEmojis.map((emoji, i) => (
-              <motion.span
-                key={i}
-                className="text-2xl md:text-3xl"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{
-                  opacity: 0.8,
-                  scale: [1, 1.1, 1],
-                }}
-                transition={{
-                  opacity: { duration: 0.3, delay: 0.6 + i * 0.1 },
-                  scale: {
-                    duration: 2,
-                    delay: 0.9 + i * 0.1,
-                    repeat: Infinity,
-                    repeatType: 'reverse',
-                    ease: 'easeInOut'
-                  }
-                }}
-              >
-                {emoji}
-              </motion.span>
-            ))}
+            {/* Hearts with enhanced animation */}
+            <div className="flex items-center gap-2">
+              {displayValues.celebrationEmojis.map((emoji, i) => (
+                <motion.div
+                  key={i}
+                  className="relative"
+                  initial={{ opacity: 0, scale: 0, y: 20 }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    delay: 0.6 + i * 0.12,
+                    type: 'spring',
+                    stiffness: 200,
+                    damping: 12,
+                  }}
+                >
+                  {/* Soft glow behind heart */}
+                  <motion.div
+                    className={`absolute inset-0 rounded-full blur-md ${isBoy ? 'bg-blue-400/30' : 'bg-pink-400/30'}`}
+                    animate={{
+                      scale: [1, 1.4, 1],
+                      opacity: [0.3, 0.5, 0.3],
+                    }}
+                    transition={{
+                      duration: 2.5,
+                      delay: 1 + i * 0.3,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  />
+                  {/* Heart with float and pulse */}
+                  <motion.span
+                    className="relative text-2xl md:text-3xl block"
+                    animate={{
+                      y: [0, -4, 0],
+                      scale: [1, 1.08, 1],
+                    }}
+                    transition={{
+                      y: {
+                        duration: 2,
+                        delay: 1.2 + i * 0.2,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      },
+                      scale: {
+                        duration: 2.5,
+                        delay: 1 + i * 0.3,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      },
+                    }}
+                  >
+                    {emoji}
+                  </motion.span>
+                </motion.div>
+              ))}
+            </div>
 
-            {/* Right line - expands from center */}
-            <motion.div
-              className={`h-px ${isBoy ? 'bg-gradient-to-l from-transparent to-blue-300/50' : 'bg-gradient-to-l from-transparent to-pink-300/50'}`}
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 64, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.5, ease: 'easeOut' }}
-            />
+            {/* Right line with glow effect */}
+            <div className="relative">
+              <motion.div
+                className={`h-[2px] rounded-full ${isBoy ? 'bg-gradient-to-l from-transparent via-blue-300/60 to-blue-400/80' : 'bg-gradient-to-l from-transparent via-pink-300/60 to-pink-400/80'}`}
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 80, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4, ease: [0.23, 1, 0.32, 1] }}
+              />
+              {/* Shimmer overlay */}
+              <motion.div
+                className="absolute inset-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                initial={{ x: 80, opacity: 0 }}
+                animate={{ x: -80, opacity: [0, 1, 0] }}
+                transition={{ duration: 1.2, delay: 1, ease: 'easeInOut' }}
+              />
+            </div>
           </div>
 
           <p className="text-3xl md:text-4xl font-script mb-12 animate-float-up text-white/90"
