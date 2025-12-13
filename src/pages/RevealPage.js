@@ -252,6 +252,42 @@ function RevealPage() {
   }, [code, startFallbackPolling]);
 
   // Initialize preview mode
+  // Load audio in background for preview mode (authenticated user)
+  const loadPreviewAudioInBackground = async () => {
+    try {
+      const [countdownAudio, celebrationAudio] = await Promise.all([
+        authService.getAudio('countdown'),
+        authService.getAudio('celebration'),
+      ]);
+
+      setPreferences((prev) => {
+        const updated = { ...prev };
+        if (countdownAudio?.audioData) {
+          updated.customAudio = {
+            ...updated.customAudio,
+            countdown: {
+              ...updated.customAudio?.countdown,
+              data: countdownAudio.audioData,
+            },
+          };
+        }
+        if (celebrationAudio?.audioData) {
+          updated.customAudio = {
+            ...updated.customAudio,
+            celebration: {
+              ...updated.customAudio?.celebration,
+              data: celebrationAudio.audioData,
+            },
+          };
+        }
+        return updated;
+      });
+    } catch {
+      // Audio fetch failed - will use default audio
+      console.log('Custom audio not available, using defaults');
+    }
+  };
+
   const initPreviewMode = useCallback(async () => {
     if (!previewGender || (previewGender !== 'boy' && previewGender !== 'girl')) {
       setError('Invalid preview gender. Use ?preview=true&gender=boy or ?preview=true&gender=girl');
@@ -260,39 +296,18 @@ function RevealPage() {
     }
 
     try {
-      // Fetch user preferences
+      // Fetch user preferences (fast - no audio data)
       const prefsData = await authService.getPreferences();
       const userPrefs = { ...DEFAULT_PREFERENCES, ...prefsData.preferences };
 
-      // Try to fetch custom audio data if available
-      try {
-        const [countdownAudio, celebrationAudio] = await Promise.all([
-          authService.getAudio('countdown'),
-          authService.getAudio('celebration'),
-        ]);
-
-        if (countdownAudio?.audioData) {
-          userPrefs.customAudio = userPrefs.customAudio || {};
-          userPrefs.customAudio.countdown = {
-            ...userPrefs.customAudio.countdown,
-            data: countdownAudio.audioData,
-          };
-        }
-        if (celebrationAudio?.audioData) {
-          userPrefs.customAudio = userPrefs.customAudio || {};
-          userPrefs.customAudio.celebration = {
-            ...userPrefs.customAudio.celebration,
-            data: celebrationAudio.audioData,
-          };
-        }
-      } catch {
-        // Audio fetch failed, continue without custom audio
-      }
-
+      // Set UI immediately
       setPreferences(userPrefs);
       setGender(previewGender);
-      setIsHost(true); // In preview mode, user is always the host
+      setIsHost(true);
       setStep('ready');
+
+      // Load audio in background (non-blocking)
+      loadPreviewAudioInBackground();
     } catch (err) {
       setError('Failed to load preferences. Please log in first.');
       setStep('error');
@@ -324,6 +339,47 @@ function RevealPage() {
     };
   }, [code, stopAudio, disconnectWebSocket, isPreviewMode, initPreviewMode]);
 
+  // Load audio in background - non-blocking, updates preferences when loaded
+  const loadAudioInBackground = async (revealCode, initialPrefs) => {
+    try {
+      const [countdownAudio, celebrationAudio] = await Promise.all([
+        initialPrefs.customAudio?.countdown?.fileName
+          ? genderService.getAudioByCode(revealCode, 'countdown')
+          : null,
+        initialPrefs.customAudio?.celebration?.fileName
+          ? genderService.getAudioByCode(revealCode, 'celebration')
+          : null,
+      ]);
+
+      // Update preferences with loaded audio data
+      setPreferences((prev) => {
+        const updated = { ...prev };
+        if (countdownAudio?.audioData) {
+          updated.customAudio = {
+            ...updated.customAudio,
+            countdown: {
+              ...updated.customAudio?.countdown,
+              data: countdownAudio.audioData,
+            },
+          };
+        }
+        if (celebrationAudio?.audioData) {
+          updated.customAudio = {
+            ...updated.customAudio,
+            celebration: {
+              ...updated.customAudio?.celebration,
+              data: celebrationAudio.audioData,
+            },
+          };
+        }
+        return updated;
+      });
+    } catch {
+      // Audio fetch failed - will use default audio
+      console.log('Custom audio not available, using defaults');
+    }
+  };
+
   const checkStatus = async () => {
     try {
       const data = await genderService.getStatusByCode(code);
@@ -334,41 +390,20 @@ function RevealPage() {
         return;
       }
 
-      // Store preferences from API response
+      // Store preferences from API response (WITHOUT audio data - loads in background)
       let userPrefs = { ...DEFAULT_PREFERENCES };
       if (data.preferences) {
         userPrefs = { ...userPrefs, ...data.preferences };
       }
 
-      // Fetch custom audio separately (not included in status response for performance)
-      // Only fetch if metadata indicates custom audio exists
-      if (userPrefs.customAudio?.countdown?.fileName || userPrefs.customAudio?.celebration?.fileName) {
-        try {
-          const [countdownAudio, celebrationAudio] = await Promise.all([
-            userPrefs.customAudio?.countdown?.fileName ? genderService.getAudioByCode(code, 'countdown') : null,
-            userPrefs.customAudio?.celebration?.fileName ? genderService.getAudioByCode(code, 'celebration') : null,
-          ]);
-
-          if (countdownAudio?.audioData) {
-            userPrefs.customAudio = userPrefs.customAudio || {};
-            userPrefs.customAudio.countdown = {
-              ...userPrefs.customAudio.countdown,
-              data: countdownAudio.audioData,
-            };
-          }
-          if (celebrationAudio?.audioData) {
-            userPrefs.customAudio = userPrefs.customAudio || {};
-            userPrefs.customAudio.celebration = {
-              ...userPrefs.customAudio.celebration,
-              data: celebrationAudio.audioData,
-            };
-          }
-        } catch {
-          // Audio fetch failed, continue without custom audio
-        }
-      }
-
+      // Set preferences immediately so UI can render
       setPreferences(userPrefs);
+
+      // Fetch custom audio in BACKGROUND (non-blocking) - will update preferences when loaded
+      if (userPrefs.customAudio?.countdown?.fileName || userPrefs.customAudio?.celebration?.fileName) {
+        // Don't await - let it load in background
+        loadAudioInBackground(code, userPrefs);
+      }
 
       // Check if this is the host (owner of the reveal)
       setIsHost(data.isHost || false);
