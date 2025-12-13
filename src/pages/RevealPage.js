@@ -1194,16 +1194,16 @@ function RevealPage() {
 
           {/* Confetti Button */}
           <button
-            className={`relative group py-4 px-10 rounded-full font-semibold text-lg text-white transition-all duration-300 hover:scale-105 active:scale-98 ${
+            className={`relative group py-3 px-6 rounded-full font-medium text-base text-white transition-all duration-300 hover:scale-105 active:scale-98 ${
               isBoy
                 ? 'bg-gradient-to-r from-blue-500/30 via-blue-400/40 to-blue-500/30 border border-blue-300/30 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:border-blue-300/50'
                 : 'bg-gradient-to-r from-pink-500/30 via-pink-400/40 to-pink-500/30 border border-pink-300/30 shadow-lg shadow-pink-500/20 hover:shadow-pink-500/40 hover:border-pink-300/50'
             }`}
             onClick={() => triggerConfetti(gender)}
           >
-            <span className="flex items-center gap-3">
+            <span className="flex items-center gap-2">
               {/* Confetti SVG icon */}
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5.8 11.3 2 22l10.7-3.79" />
                 <path d="M4 3h.01" />
                 <path d="M22 8h.01" />
