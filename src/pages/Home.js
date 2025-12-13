@@ -250,13 +250,91 @@ function Home() {
               )}
             </div>
 
-            {/* How it works - minimal */}
-            <div className="grid md:grid-cols-3 gap-8 text-left">
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
-                  1
+            {/* Our Promise */}
+            <div className="mb-16 max-w-2xl mx-auto">
+              <p className="text-white/40 text-xs uppercase tracking-widest text-center mb-6">
+                Our promise to you
+              </p>
+              <div className="relative rounded-2xl bg-gradient-to-r from-emerald-500/10 via-transparent to-emerald-500/10 border border-emerald-400/20">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent rounded-2xl" />
+                <div className="relative px-6 py-5 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10">
+                  {/* Free Forever */}
+                  <div className="group/free relative cursor-default">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 group-hover/free:bg-emerald-500/30 transition-colors duration-300">
+                        <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-white font-medium text-sm flex items-center gap-1.5">
+                          100% Free Forever
+                          <svg className="w-3.5 h-3.5 text-white/30 group-hover/free:text-emerald-400 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </p>
+                        <p className="text-white/40 text-xs">No hidden costs</p>
+                      </div>
+                    </div>
+                    {/* Hover Popover */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-72 opacity-0 invisible group-hover/free:opacity-100 group-hover/free:visible transition-all duration-300 z-50 pointer-events-none group-hover/free:pointer-events-auto">
+                      <div className="relative bg-slate-800/95 backdrop-blur-xl rounded-xl p-4 border border-emerald-500/20 shadow-xl shadow-black/20">
+                        {/* Arrow */}
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-800/95 border-l border-t border-emerald-500/20 rotate-45" />
+                        <p className="text-white/80 text-sm leading-relaxed relative">
+                          We built this for our own gender reveal and loved it so much, we decided to share it with the world. Completely free, forever.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="hidden sm:block w-px h-10 bg-white/10" />
+
+                  {/* Privacy */}
+                  <div className="group/privacy relative cursor-default">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 group-hover/privacy:bg-emerald-500/30 transition-colors duration-300">
+                        <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-white font-medium text-sm flex items-center gap-1.5">
+                          Private by Design
+                          <svg className="w-3.5 h-3.5 text-white/30 group-hover/privacy:text-emerald-400 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </p>
+                        <p className="text-white/40 text-xs">No tracking or data sales</p>
+                      </div>
+                    </div>
+                    {/* Hover Popover */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-72 opacity-0 invisible group-hover/privacy:opacity-100 group-hover/privacy:visible transition-all duration-300 z-50 pointer-events-none group-hover/privacy:pointer-events-auto">
+                      <div className="relative bg-slate-800/95 backdrop-blur-xl rounded-xl p-4 border border-emerald-500/20 shadow-xl shadow-black/20">
+                        {/* Arrow */}
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-800/95 border-l border-t border-emerald-500/20 rotate-45" />
+                        <p className="text-white/80 text-sm leading-relaxed relative">
+                          Built by a Computer Science PhD researcher who genuinely cares about privacy. Your moments are yours alone. Never tracked, analyzed, or sold.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-white font-medium">Sign up</h3>
+              </div>
+            </div>
+
+            {/* How it works */}
+            <div className="mb-16">
+              <p className="text-white/40 text-xs uppercase tracking-widest text-center mb-8">
+                How it works
+              </p>
+              <div className="grid md:grid-cols-3 gap-8 text-left">
+                <div className="space-y-3">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
+                    1
+                  </div>
+                  <h3 className="text-white font-medium">Sign up</h3>
                 <p className="text-white/50 text-sm leading-relaxed">
                   Create an account and get two links.
                 </p>
@@ -278,6 +356,7 @@ function Home() {
                 <p className="text-white/50 text-sm leading-relaxed">
                   Open your Reveal link at the party. Find out together!
                 </p>
+              </div>
               </div>
             </div>
 
