@@ -31,6 +31,17 @@ const PreviewBadge = ({ isPreviewMode }) => {
 };
 
 const SOCKET_URL = process.env.REACT_APP_API_URL || 'https://hidden-simonette-baby-reveal-patry-b1dd6946.koyeb.app';
+const API_URL = process.env.REACT_APP_API_URL || 'https://hidden-simonette-baby-reveal-patry-b1dd6946.koyeb.app';
+
+/**
+ * Build full audio URL from relative path
+ * @param {string|null} relativePath - e.g. "/api/audio/CODE/countdown"
+ * @returns {string|null} Full URL or null
+ */
+const buildAudioUrl = (relativePath) => {
+  if (!relativePath) return null;
+  return `${API_URL}${relativePath}`;
+};
 
 function RevealPage() {
   const { code } = useParams();
@@ -84,8 +95,8 @@ function RevealPage() {
     const colors = revealedGender === 'boy' ? theme.boy : theme.girl;
 
     if (withSound && preferences.soundEnabled) {
-      const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
-      playCelebration(customCelebrationAudio);
+      const celebrationUrl = buildAudioUrl(preferences.customAudio?.celebration?.url);
+      playCelebration(celebrationUrl);
     }
 
     confetti({
@@ -118,20 +129,20 @@ function RevealPage() {
       }
     };
     frame();
-  }, [preferences.theme, preferences.animationIntensity, preferences.soundEnabled, preferences.customAudio?.celebration?.data, playCelebration]);
+  }, [preferences.theme, preferences.animationIntensity, preferences.soundEnabled, preferences.customAudio?.celebration?.url, playCelebration]);
 
   // Countdown complete handler
   const onCountdownComplete = useCallback(() => {
     setStep('opening');
     if (preferences.soundEnabled) {
-      const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
-      playCelebration(customCelebrationAudio);
+      const celebrationUrl = buildAudioUrl(preferences.customAudio?.celebration?.url);
+      playCelebration(celebrationUrl);
     }
     setTimeout(() => {
       setStep('reveal');
       triggerConfetti(gender, false);
     }, 1200);
-  }, [gender, preferences.soundEnabled, preferences.customAudio?.celebration?.data, playCelebration, triggerConfetti]);
+  }, [gender, preferences.soundEnabled, preferences.customAudio?.celebration?.url, playCelebration, triggerConfetti]);
 
   const { count, start: startCountdown } = useCountdown(5, onCountdownComplete);
 
@@ -150,8 +161,8 @@ function RevealPage() {
       setGender(revealedGender);
       setStep('countdown');
       if (preferences.soundEnabled) {
-        const customCountdownAudio = preferences.customAudio?.countdown?.data || null;
-        playDrumroll(customCountdownAudio, countdownDuration - elapsed);
+        const countdownUrl = buildAudioUrl(preferences.customAudio?.countdown?.url);
+        playDrumroll(countdownUrl, countdownDuration - elapsed);
       }
       startCountdown(Math.ceil(countdownDuration - elapsed));
     } else if (elapsed < countdownDuration + 2) {
@@ -159,8 +170,8 @@ function RevealPage() {
       setGender(revealedGender);
       setStep('opening');
       if (preferences.soundEnabled) {
-        const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
-        playCelebration(customCelebrationAudio);
+        const celebrationUrl = buildAudioUrl(preferences.customAudio?.celebration?.url);
+        playCelebration(celebrationUrl);
       }
       setTimeout(() => {
         setStep('reveal');
@@ -252,42 +263,6 @@ function RevealPage() {
   }, [code, startFallbackPolling]);
 
   // Initialize preview mode
-  // Load audio in background for preview mode (authenticated user)
-  const loadPreviewAudioInBackground = async () => {
-    try {
-      const [countdownAudio, celebrationAudio] = await Promise.all([
-        authService.getAudio('countdown'),
-        authService.getAudio('celebration'),
-      ]);
-
-      setPreferences((prev) => {
-        const updated = { ...prev };
-        if (countdownAudio?.audioData) {
-          updated.customAudio = {
-            ...updated.customAudio,
-            countdown: {
-              ...updated.customAudio?.countdown,
-              data: countdownAudio.audioData,
-            },
-          };
-        }
-        if (celebrationAudio?.audioData) {
-          updated.customAudio = {
-            ...updated.customAudio,
-            celebration: {
-              ...updated.customAudio?.celebration,
-              data: celebrationAudio.audioData,
-            },
-          };
-        }
-        return updated;
-      });
-    } catch {
-      // Audio fetch failed - will use default audio
-      console.log('Custom audio not available, using defaults');
-    }
-  };
-
   const initPreviewMode = useCallback(async () => {
     if (!previewGender || (previewGender !== 'boy' && previewGender !== 'girl')) {
       setError('Invalid preview gender. Use ?preview=true&gender=boy or ?preview=true&gender=girl');
@@ -300,14 +275,11 @@ function RevealPage() {
       const prefsData = await authService.getPreferences();
       const userPrefs = { ...DEFAULT_PREFERENCES, ...prefsData.preferences };
 
-      // Set UI immediately
+      // Set UI immediately - audio URLs are already in preferences
       setPreferences(userPrefs);
       setGender(previewGender);
       setIsHost(true);
       setStep('ready');
-
-      // Load audio in background (non-blocking)
-      loadPreviewAudioInBackground();
     } catch (err) {
       setError('Failed to load preferences. Please log in first.');
       setStep('error');
@@ -339,47 +311,6 @@ function RevealPage() {
     };
   }, [code, stopAudio, disconnectWebSocket, isPreviewMode, initPreviewMode]);
 
-  // Load audio in background - non-blocking, updates preferences when loaded
-  const loadAudioInBackground = async (revealCode, initialPrefs) => {
-    try {
-      const [countdownAudio, celebrationAudio] = await Promise.all([
-        initialPrefs.customAudio?.countdown?.fileName
-          ? genderService.getAudioByCode(revealCode, 'countdown')
-          : null,
-        initialPrefs.customAudio?.celebration?.fileName
-          ? genderService.getAudioByCode(revealCode, 'celebration')
-          : null,
-      ]);
-
-      // Update preferences with loaded audio data
-      setPreferences((prev) => {
-        const updated = { ...prev };
-        if (countdownAudio?.audioData) {
-          updated.customAudio = {
-            ...updated.customAudio,
-            countdown: {
-              ...updated.customAudio?.countdown,
-              data: countdownAudio.audioData,
-            },
-          };
-        }
-        if (celebrationAudio?.audioData) {
-          updated.customAudio = {
-            ...updated.customAudio,
-            celebration: {
-              ...updated.customAudio?.celebration,
-              data: celebrationAudio.audioData,
-            },
-          };
-        }
-        return updated;
-      });
-    } catch {
-      // Audio fetch failed - will use default audio
-      console.log('Custom audio not available, using defaults');
-    }
-  };
-
   const checkStatus = async () => {
     try {
       const data = await genderService.getStatusByCode(code);
@@ -390,20 +321,14 @@ function RevealPage() {
         return;
       }
 
-      // Store preferences from API response (WITHOUT audio data - loads in background)
+      // Store preferences from API response (includes audio URLs)
       let userPrefs = { ...DEFAULT_PREFERENCES };
       if (data.preferences) {
         userPrefs = { ...userPrefs, ...data.preferences };
       }
 
-      // Set preferences immediately so UI can render
+      // Set preferences immediately - audio URLs are included, browser will fetch when played
       setPreferences(userPrefs);
-
-      // Fetch custom audio in BACKGROUND (non-blocking) - will update preferences when loaded
-      if (userPrefs.customAudio?.countdown?.fileName || userPrefs.customAudio?.celebration?.fileName) {
-        // Don't await - let it load in background
-        loadAudioInBackground(code, userPrefs);
-      }
 
       // Check if this is the host (owner of the reveal)
       setIsHost(data.isHost || false);
@@ -489,8 +414,8 @@ function RevealPage() {
 
       setStep('countdown');
       if (preferences.soundEnabled) {
-        const customCountdownAudio = preferences.customAudio?.countdown?.data || null;
-        playDrumroll(customCountdownAudio, preferences.countdownDuration);
+        const countdownUrl = buildAudioUrl(preferences.customAudio?.countdown?.url);
+        playDrumroll(countdownUrl, preferences.countdownDuration);
       }
       startCountdown(preferences.countdownDuration);
     } catch (err) {

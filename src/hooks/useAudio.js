@@ -2,7 +2,7 @@ import { useRef, useCallback } from 'react';
 
 /**
  * Custom hook for audio effects
- * Supports custom audio data (base64) or defaults to built-in MP3 files
+ * Supports custom audio URLs or defaults to built-in MP3 files
  */
 const useAudio = () => {
   const drumrollRef = useRef(null);
@@ -11,10 +11,10 @@ const useAudio = () => {
 
   /**
    * Play drumroll/countdown sound
-   * @param {string|null} customAudioData - Optional base64 encoded audio data
+   * @param {string|null} audioUrl - Optional URL to custom audio (full URL or relative path)
    * @param {number|null} durationSeconds - Optional duration in seconds (auto-stops after this)
    */
-  const playDrumroll = useCallback((customAudioData = null, durationSeconds = null) => {
+  const playDrumroll = useCallback((audioUrl = null, durationSeconds = null) => {
     try {
       // Clear any existing timer
       if (drumrollTimerRef.current) {
@@ -28,8 +28,8 @@ const useAudio = () => {
         drumrollRef.current.currentTime = 0;
       }
 
-      // Use custom audio if provided, otherwise default
-      const audioSrc = customAudioData || '/drumroll.mp3';
+      // Use custom audio URL if provided, otherwise default
+      const audioSrc = audioUrl || '/drumroll.mp3';
       drumrollRef.current = new Audio(audioSrc);
       drumrollRef.current.volume = 0.8;
       drumrollRef.current.play().catch(() => {
@@ -71,9 +71,9 @@ const useAudio = () => {
 
   /**
    * Play celebration sound
-   * @param {string|null} customAudioData - Optional base64 encoded audio data
+   * @param {string|null} audioUrl - Optional URL to custom audio (full URL or relative path)
    */
-  const playCelebration = useCallback((customAudioData = null) => {
+  const playCelebration = useCallback((audioUrl = null) => {
     try {
       // Stop drumroll if playing
       if (drumrollRef.current) {
@@ -87,8 +87,8 @@ const useAudio = () => {
         celebrationRef.current.currentTime = 0;
       }
 
-      // Use custom audio if provided, otherwise default
-      const audioSrc = customAudioData || '/celebration.mp3';
+      // Use custom audio URL if provided, otherwise default
+      const audioSrc = audioUrl || '/celebration.mp3';
       celebrationRef.current = new Audio(audioSrc);
       celebrationRef.current.volume = 0.8;
       celebrationRef.current.play().catch(() => {
