@@ -130,12 +130,12 @@ const useAudio = () => {
 
       const src = audioUrl || '/drumroll.mp3';
 
-      // Check if we can reuse preloaded audio
-      if (drumrollRef.current && preloadedDrumrollUrl.current === src) {
+      // Check if we can reuse preloaded audio (must be ready to play: readyState >= 3)
+      if (drumrollRef.current && preloadedDrumrollUrl.current === src && drumrollRef.current.readyState >= 3) {
         // Reuse preloaded - just reset and play
         drumrollRef.current.currentTime = 0;
       } else {
-        // Different URL or not preloaded - create new
+        // Different URL, not preloaded, or not ready - create new
         if (drumrollRef.current) {
           drumrollRef.current.pause();
         }
@@ -147,8 +147,17 @@ const useAudio = () => {
         preloadedDrumrollUrl.current = src;
       }
 
-      drumrollRef.current.play().catch(() => {
-        console.log('Audio autoplay blocked');
+      drumrollRef.current.play().catch((err) => {
+        console.log('Audio play failed, retrying with new element:', err.message);
+        // Retry with a fresh Audio element
+        const freshAudio = new Audio();
+        freshAudio.crossOrigin = 'anonymous';
+        freshAudio.volume = 0.8;
+        freshAudio.src = src;
+        drumrollRef.current = freshAudio;
+        freshAudio.play().catch(() => {
+          console.log('Audio autoplay blocked');
+        });
       });
 
       // Auto-stop after countdown duration
@@ -182,12 +191,12 @@ const useAudio = () => {
 
       const src = audioUrl || '/celebration.mp3';
 
-      // Check if we can reuse preloaded audio
-      if (celebrationRef.current && preloadedCelebrationUrl.current === src) {
+      // Check if we can reuse preloaded audio (must be ready to play: readyState >= 3)
+      if (celebrationRef.current && preloadedCelebrationUrl.current === src && celebrationRef.current.readyState >= 3) {
         // Reuse preloaded - just reset and play
         celebrationRef.current.currentTime = 0;
       } else {
-        // Different URL or not preloaded - create new
+        // Different URL, not preloaded, or not ready - create new
         if (celebrationRef.current) {
           celebrationRef.current.pause();
         }
@@ -199,8 +208,17 @@ const useAudio = () => {
         preloadedCelebrationUrl.current = src;
       }
 
-      celebrationRef.current.play().catch(() => {
-        console.log('Audio autoplay blocked');
+      celebrationRef.current.play().catch((err) => {
+        console.log('Celebration play failed, retrying with new element:', err.message);
+        // Retry with a fresh Audio element
+        const freshAudio = new Audio();
+        freshAudio.crossOrigin = 'anonymous';
+        freshAudio.volume = 0.8;
+        freshAudio.src = src;
+        celebrationRef.current = freshAudio;
+        freshAudio.play().catch(() => {
+          console.log('Audio autoplay blocked');
+        });
       });
     } catch (error) {
       console.log('Audio not supported');
