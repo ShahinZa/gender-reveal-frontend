@@ -636,6 +636,29 @@ function RevealPage() {
               </svg>
               Check Now
             </motion.button>
+
+            {/* Audio preload status - caching for when reveal is ready */}
+            {preferences.soundEnabled && audioStatus !== 'idle' && (
+              <motion.div
+                className="flex items-center justify-center gap-1.5 mt-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                    audioStatus === 'loading'
+                      ? 'bg-amber-400/80 animate-pulse'
+                      : 'bg-emerald-400/80'
+                  }`}
+                />
+                <span className={`text-[10px] tracking-wide transition-colors duration-300 ${
+                  audioStatus === 'loading' ? 'text-white/30' : 'text-white/40'
+                }`}>
+                  {audioStatus === 'loading' ? 'Caching sounds' : 'Sounds cached'}
+                </span>
+              </motion.div>
+            )}
           </motion.div>
         </div>
       </div>
