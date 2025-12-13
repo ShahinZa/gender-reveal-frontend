@@ -1069,11 +1069,11 @@ function RevealPage() {
               ))}
             </div>
 
-            {/* Right side - flowing orbs emanating outward */}
+            {/* Right side - flowing orbs emanating outward (mirrored: small to big) */}
             <div className="flex items-center gap-1.5">
               {[...Array(4)].map((_, i) => {
-                const sizes = [6, 5, 4, 3]; // Shrink away from center
-                const opacities = [0.8, 0.6, 0.45, 0.3];
+                const sizes = [3, 4, 5, 6]; // Grow away from center (mirrored)
+                const opacities = [0.3, 0.45, 0.6, 0.8]; // Fade in away from center
                 const delays = [0.45, 0.6, 0.75, 0.9]; // Appear from center outward
                 return (
                   <motion.div
