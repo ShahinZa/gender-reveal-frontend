@@ -72,7 +72,7 @@ function RevealPage() {
   const spawnHeartRef = useRef(null); // Ref to hold latest spawnHeart function
   const handleRevealStartedRef = useRef(null); // Ref to hold latest handler
 
-  const { preloadDrumroll, preloadCelebration, playDrumroll, playCelebration, stopAudio } = useAudio();
+  const { preloadDrumroll, preloadCelebration, playDrumroll, playCelebration, stopAudio, audioStatus } = useAudio();
 
   // Heart reactions hook
   const { hearts, sendHeart, spawnHeart } = useHeartReactions({
@@ -732,6 +732,22 @@ function RevealPage() {
                 'Reveal Now'
               )}
             </button>
+
+            {/* Audio preload status indicator - subtle, non-blocking */}
+            {preferences.soundEnabled && audioStatus !== 'idle' && (
+              <div className="flex items-center justify-center gap-1.5 mt-4" title={audioStatus === 'loading' ? 'Loading audio...' : 'Audio ready'}>
+                <svg className="w-3 h-3 text-white/40" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+                </svg>
+                <span
+                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                    audioStatus === 'loading'
+                      ? 'bg-amber-400 animate-pulse'
+                      : 'bg-green-400'
+                  }`}
+                />
+              </div>
+            )}
 
             <p className="text-white/50 text-sm mt-8">
               {isSynced

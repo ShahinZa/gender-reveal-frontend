@@ -1,8 +1,9 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 
 /**
  * Custom hook for audio effects with preloading support
  * Preload audio URLs early so playback starts instantly when needed
+ * Exposes loading status for UI indicators
  */
 const useAudio = () => {
   const drumrollRef = useRef(null);
@@ -12,6 +13,10 @@ const useAudio = () => {
   // Track preloaded URLs to avoid duplicate loading
   const preloadedDrumrollUrl = useRef(null);
   const preloadedCelebrationUrl = useRef(null);
+
+  // Track loading status for UI indicator
+  const [drumrollStatus, setDrumrollStatus] = useState('idle'); // 'idle' | 'loading' | 'ready' | 'error'
+  const [celebrationStatus, setCelebrationStatus] = useState('idle');
 
   /**
    * Preload drumroll audio for instant playback later
@@ -33,10 +38,22 @@ const useAudio = () => {
         drumrollRef.current = null;
       }
 
+      setDrumrollStatus('loading');
+
       // Create and preload
       const audio = new Audio();
       audio.preload = 'auto';
       audio.volume = 0.8;
+
+      // Track when ready to play
+      audio.addEventListener('canplaythrough', () => {
+        setDrumrollStatus('ready');
+      }, { once: true });
+
+      audio.addEventListener('error', () => {
+        setDrumrollStatus('error');
+      }, { once: true });
+
       audio.src = src;
       audio.load(); // Start loading immediately
 
@@ -44,6 +61,7 @@ const useAudio = () => {
       preloadedDrumrollUrl.current = src;
     } catch (error) {
       console.log('Audio preload not supported');
+      setDrumrollStatus('error');
     }
   }, []);
 
@@ -66,10 +84,22 @@ const useAudio = () => {
         celebrationRef.current = null;
       }
 
+      setCelebrationStatus('loading');
+
       // Create and preload
       const audio = new Audio();
       audio.preload = 'auto';
       audio.volume = 0.8;
+
+      // Track when ready to play
+      audio.addEventListener('canplaythrough', () => {
+        setCelebrationStatus('ready');
+      }, { once: true });
+
+      audio.addEventListener('error', () => {
+        setCelebrationStatus('error');
+      }, { once: true });
+
       audio.src = src;
       audio.load(); // Start loading immediately
 
@@ -77,6 +107,7 @@ const useAudio = () => {
       preloadedCelebrationUrl.current = src;
     } catch (error) {
       console.log('Audio preload not supported');
+      setCelebrationStatus('error');
     }
   }, []);
 
@@ -186,12 +217,31 @@ const useAudio = () => {
     }
   }, []);
 
+  // Computed status for UI indicator
+  // 'idle' = no audio to load, 'loading' = fetching, 'ready' = all ready, 'error' = failed
+  const getAudioStatus = useCallback(() => {
+    // If both are idle, no custom audio is being loaded
+    if (drumrollStatus === 'idle' && celebrationStatus === 'idle') {
+      return 'idle';
+    }
+    // If any is loading, show loading
+    if (drumrollStatus === 'loading' || celebrationStatus === 'loading') {
+      return 'loading';
+    }
+    // If all non-idle are ready (or error which we treat as ready - will fallback)
+    return 'ready';
+  }, [drumrollStatus, celebrationStatus]);
+
   return {
     preloadDrumroll,
     preloadCelebration,
     playDrumroll,
     playCelebration,
     stopAudio,
+    // Audio status for UI indicator
+    audioStatus: getAudioStatus(),
+    drumrollStatus,
+    celebrationStatus,
   };
 };
 
