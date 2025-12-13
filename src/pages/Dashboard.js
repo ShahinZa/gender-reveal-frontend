@@ -206,7 +206,7 @@ function Dashboard() {
             </div>
             {status?.isRevealed && (
               <p className="text-white/50 text-sm mt-4 pt-4 border-t border-white/10">
-                Reveal data will be automatically deleted after 60 days for your privacy.
+                Your reveal data will be automatically deleted 60 days after the reveal date for your privacy.
               </p>
             )}
           </div>
