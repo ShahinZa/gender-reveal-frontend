@@ -15,11 +15,14 @@ function AuthPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Get redirect URL from query params
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate(redirectUrl);
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, redirectUrl]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,7 +38,7 @@ function AuthPage() {
       } else {
         await login(email, password);
       }
-      navigate('/dashboard');
+      navigate(redirectUrl);
     } catch (err) {
       setError(err.message);
     } finally {

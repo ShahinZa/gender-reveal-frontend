@@ -153,16 +153,68 @@ function Home() {
 
             {/* Headline */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              Share the joy with a
+              All the magic.
               <span className="block mt-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent leading-normal">
-                magical reveal
+                None of the risk.
               </span>
             </h1>
 
             {/* Subheadline */}
-            <p className="text-lg md:text-xl text-white/60 mb-10 max-w-lg mx-auto leading-relaxed">
-              A secure, encrypted way to keep your baby's gender a surprise until the perfect moment.
+            <p className="text-lg md:text-xl text-white/60 mb-8 max-w-lg mx-auto leading-relaxed">
+              The modern gender reveal. Safe, stunning, and shareable with everyone you love.
             </p>
+
+            {/* Why Digital - Enhanced Feature Grid */}
+            <div className="mb-12 max-w-3xl mx-auto">
+              <p className="text-white/40 text-xs uppercase tracking-widest text-center mb-6">
+                Why families choose digital
+              </p>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Encrypted */}
+                <div className="group relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/10 hover:border-purple-400/30 transition-all duration-300 hover:scale-[1.02] text-center">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 mx-auto">
+                    <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-white font-semibold text-sm mb-1">Encrypted</h4>
+                  <p className="text-white/50 text-xs leading-relaxed">Secret stays hidden until you're ready</p>
+                </div>
+
+                {/* Eco-friendly */}
+                <div className="group relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/10 hover:border-emerald-400/30 transition-all duration-300 hover:scale-[1.02] text-center">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 mx-auto">
+                    <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </div>
+                  <h4 className="text-white font-semibold text-sm mb-1">Zero waste</h4>
+                  <p className="text-white/50 text-xs leading-relaxed">No balloons, plastic, or cleanup needed</p>
+                </div>
+
+                {/* Safe */}
+                <div className="group relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/10 hover:border-orange-400/30 transition-all duration-300 hover:scale-[1.02] text-center">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 mx-auto">
+                    <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-white font-semibold text-sm mb-1">100% safe</h4>
+                  <p className="text-white/50 text-xs leading-relaxed">No pyrotechnics, smoke, or fire hazards</p>
+                </div>
+
+                {/* Share anywhere */}
+                <div className="group relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/10 hover:border-blue-400/30 transition-all duration-300 hover:scale-[1.02] text-center">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 mx-auto">
+                    <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-white font-semibold text-sm mb-1">Include everyone</h4>
+                  <p className="text-white/50 text-xs leading-relaxed">Family abroad joins live via link</p>
+                </div>
+              </div>
+            </div>
 
             {/* CTA Buttons */}
             <div className="mb-16">

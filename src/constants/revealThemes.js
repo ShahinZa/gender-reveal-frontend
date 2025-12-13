@@ -132,4 +132,5 @@ export const DEFAULT_PREFERENCES = {
   girlEmoji: '👧',
   skinTone: '',
   babyCount: 1,
+  syncedReveal: false, // When true, all viewers see reveal simultaneously
 };

@@ -4,7 +4,7 @@ import { authService } from '../api';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-function RevealSettings({ isGenderSet = false }) {
+function RevealSettings({ isGenderSet = false, onPreferencesChange }) {
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [isExpanded, setIsExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -40,13 +40,15 @@ function RevealSettings({ isGenderSet = false }) {
       await authService.updatePreferences(newPrefs);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(null), 2000);
+      // Notify parent of preference changes
+      onPreferencesChange?.(newPrefs);
     } catch (err) {
       console.error('Failed to save preferences:', err);
       setSaveStatus('error');
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [onPreferencesChange]);
 
   // Handle preference change with debounce
   const handleChange = useCallback((key, value) => {
@@ -149,6 +151,15 @@ function RevealSettings({ isGenderSet = false }) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  // Truncate long file names
+  const truncateFileName = (name, maxLength = 20) => {
+    if (!name || name.length <= maxLength) return name;
+    const ext = name.split('.').pop();
+    const nameWithoutExt = name.slice(0, name.lastIndexOf('.'));
+    const truncatedName = nameWithoutExt.slice(0, maxLength - ext.length - 4) + '...';
+    return `${truncatedName}.${ext}`;
+  };
+
   if (loading) {
     return (
       <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
@@ -160,7 +171,7 @@ function RevealSettings({ isGenderSet = false }) {
   }
 
   return (
-    <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+    <div id="reveal-settings" className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
       {/* Header - Always visible */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -346,6 +357,66 @@ function RevealSettings({ isGenderSet = false }) {
             </button>
           </div>
 
+          {/* Synced Reveal Toggle */}
+          <div id="synced-reveal-setting">
+            <label className="block text-white/70 text-sm font-medium mb-3">
+              Live Synced Reveal
+              <span className="ml-2 text-purple-400/80 text-xs font-normal">NEW</span>
+            </label>
+            <button
+              onClick={() => handleChange('syncedReveal', !preferences.syncedReveal)}
+              className={`w-full flex items-center justify-between py-3 px-4 rounded-xl border-2 transition-all ${
+                preferences.syncedReveal
+                  ? 'border-purple-500/50 bg-purple-500/10'
+                  : 'border-white/10 bg-white/5'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <svg
+                  className={`w-5 h-5 ${preferences.syncedReveal ? 'text-purple-400' : 'text-white/40'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  {preferences.syncedReveal ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  )}
+                </svg>
+                <div className="text-left">
+                  <span className={preferences.syncedReveal ? 'text-white' : 'text-white/60'}>
+                    {preferences.syncedReveal ? 'Everyone reveals together' : 'Reveal at your own pace'}
+                  </span>
+                  <p className={`text-xs mt-0.5 ${preferences.syncedReveal ? 'text-purple-300/70' : 'text-white/40'}`}>
+                    {preferences.syncedReveal
+                      ? 'When you click reveal, all viewers see it live at the same moment'
+                      : 'Each guest controls their own reveal moment'}
+                  </p>
+                </div>
+              </div>
+              <div
+                className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${
+                  preferences.syncedReveal ? 'bg-purple-500' : 'bg-white/20'
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    preferences.syncedReveal ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </div>
+            </button>
+            {preferences.syncedReveal && (
+              <p className="text-purple-300/60 text-xs mt-3 flex items-start gap-2">
+                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Perfect for family abroad! Share the reveal link, and when you click "Reveal Now", everyone watching will see the countdown and reveal at the exact same moment.</span>
+              </p>
+            )}
+          </div>
+
           {/* Custom Audio Uploads */}
           {preferences.soundEnabled && (
             <div>
@@ -363,14 +434,14 @@ function RevealSettings({ isGenderSet = false }) {
                       <span className="text-white/80 text-sm">Countdown Sound</span>
                     </div>
                     {preferences.customAudio?.countdown ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-white/50 text-xs">
-                          {preferences.customAudio.countdown.fileName} ({formatFileSize(preferences.customAudio.countdown.size)})
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-white/50 text-xs truncate max-w-[140px]" title={preferences.customAudio.countdown.fileName}>
+                          {truncateFileName(preferences.customAudio.countdown.fileName)} ({formatFileSize(preferences.customAudio.countdown.size)})
                         </span>
                         <button
                           onClick={() => handleAudioDelete('countdown')}
                           disabled={audioUploading.countdown}
-                          className="p-1 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors disabled:opacity-50"
+                          className="p-1 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors disabled:opacity-50 flex-shrink-0"
                         >
                           {audioUploading.countdown ? (
                             <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
@@ -430,14 +501,14 @@ function RevealSettings({ isGenderSet = false }) {
                       <span className="text-white/80 text-sm">Celebration Sound</span>
                     </div>
                     {preferences.customAudio?.celebration ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-white/50 text-xs">
-                          {preferences.customAudio.celebration.fileName} ({formatFileSize(preferences.customAudio.celebration.size)})
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-white/50 text-xs truncate max-w-[140px]" title={preferences.customAudio.celebration.fileName}>
+                          {truncateFileName(preferences.customAudio.celebration.fileName)} ({formatFileSize(preferences.customAudio.celebration.size)})
                         </span>
                         <button
                           onClick={() => handleAudioDelete('celebration')}
                           disabled={audioUploading.celebration}
-                          className="p-1 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors disabled:opacity-50"
+                          className="p-1 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors disabled:opacity-50 flex-shrink-0"
                         >
                           {audioUploading.celebration ? (
                             <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />

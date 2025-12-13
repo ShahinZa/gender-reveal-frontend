@@ -1,14 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
+import { io } from 'socket.io-client';
 import { genderService, authService } from '../api';
 import { useCountdown, useAudio } from '../hooks';
 import { Button, Card, Spinner, Alert } from '../components/common';
 import { THEME_COLORS, INTENSITY_SETTINGS, DEFAULT_PREFERENCES } from '../constants/revealThemes';
 
+const SOCKET_URL = process.env.REACT_APP_API_URL || 'https://gender-production.up.railway.app';
+
 function RevealPage() {
   const { code } = useParams();
+  const navigate = useNavigate();
 
   const [step, setStep] = useState('loading');
   const [error, setError] = useState('');
@@ -22,27 +26,187 @@ function RevealPage() {
   const [passwordError, setPasswordError] = useState('');
   const [verifyingPassword, setVerifyingPassword] = useState(false);
 
+  // Synced reveal state
+  const [viewerCount, setViewerCount] = useState(1);
+  const [isHost, setIsHost] = useState(false);
+  const socketRef = useRef(null);
+  const pollingRef = useRef(null); // Fallback polling
+
   const { playDrumroll, playCelebration, stopAudio } = useAudio();
 
+  // Memoized confetti trigger - defined early as it's used by multiple callbacks
+  const triggerConfetti = useCallback((revealedGender, withSound = true) => {
+    const theme = THEME_COLORS[preferences.theme] || THEME_COLORS.classic;
+    const intensity = INTENSITY_SETTINGS[preferences.animationIntensity] || INTENSITY_SETTINGS.medium;
+    const colors = revealedGender === 'boy' ? theme.boy : theme.girl;
+
+    if (withSound && preferences.soundEnabled) {
+      const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
+      playCelebration(customCelebrationAudio);
+    }
+
+    confetti({
+      particleCount: intensity.particleCount,
+      spread: 100,
+      origin: { y: 0.6 },
+      colors
+    });
+
+    const duration = 5000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({
+        particleCount: Math.ceil(intensity.particleCount / 50),
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.8 },
+        colors
+      });
+      confetti({
+        particleCount: Math.ceil(intensity.particleCount / 50),
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.8 },
+        colors
+      });
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+    frame();
+  }, [preferences.theme, preferences.animationIntensity, preferences.soundEnabled, preferences.customAudio?.celebration?.data, playCelebration]);
+
+  // Countdown complete handler
   const onCountdownComplete = useCallback(() => {
     setStep('opening');
-    // Play celebration sound immediately when balloon animation starts
     if (preferences.soundEnabled) {
       const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
       playCelebration(customCelebrationAudio);
     }
     setTimeout(() => {
       setStep('reveal');
-      triggerConfetti(gender, false); // Don't play sound in triggerConfetti, already handled above
+      triggerConfetti(gender, false);
     }, 1200);
-  }, [gender, preferences, playCelebration]);
+  }, [gender, preferences.soundEnabled, preferences.customAudio?.celebration?.data, playCelebration, triggerConfetti]);
 
   const { count, start: startCountdown } = useCountdown(5, onCountdownComplete);
 
+  // Handle reveal started event (from WebSocket or polling)
+  const handleRevealStarted = useCallback((data) => {
+    const { gender: revealedGender, revealStartedAt, serverTime } = data;
+    const countdownDuration = preferences?.countdownDuration || 5;
+
+    // Calculate elapsed time using server time
+    const serverTimestamp = serverTime ? new Date(serverTime).getTime() : Date.now();
+    const startTime = new Date(revealStartedAt).getTime();
+    const elapsed = (serverTimestamp - startTime) / 1000;
+
+    if (elapsed < countdownDuration) {
+      // Still in countdown phase - join the countdown
+      setGender(revealedGender);
+      setStep('countdown');
+      if (preferences.soundEnabled) {
+        const customCountdownAudio = preferences.customAudio?.countdown?.data || null;
+        playDrumroll(customCountdownAudio, countdownDuration - elapsed);
+      }
+      startCountdown(Math.ceil(countdownDuration - elapsed));
+    } else if (elapsed < countdownDuration + 2) {
+      // In opening animation phase
+      setGender(revealedGender);
+      setStep('opening');
+      if (preferences.soundEnabled) {
+        const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
+        playCelebration(customCelebrationAudio);
+      }
+      setTimeout(() => {
+        setStep('reveal');
+        triggerConfetti(revealedGender, false);
+      }, Math.max(0, (countdownDuration + 1.2 - elapsed) * 1000));
+    } else {
+      // Already revealed - show final state
+      setGender(revealedGender);
+      setStep('reveal');
+      triggerConfetti(revealedGender);
+    }
+  }, [preferences, playDrumroll, playCelebration, startCountdown, triggerConfetti]);
+
+  // Disconnect WebSocket and cleanup
+  const disconnectWebSocket = useCallback(() => {
+    if (socketRef.current) {
+      socketRef.current.emit('leave-reveal', code);
+      socketRef.current.removeAllListeners();
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, [code]);
+
+  // Fallback polling if WebSocket fails (defined before connectWebSocket as it's called by it)
+  const startFallbackPolling = useCallback(() => {
+    if (pollingRef.current) return;
+
+    pollingRef.current = setInterval(async () => {
+      try {
+        const data = await genderService.getStatusByCode(code);
+        if (data.viewerCount) setViewerCount(data.viewerCount);
+        if (data.revealStartedAt) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          handleRevealStarted({
+            gender: data.gender,
+            revealStartedAt: data.revealStartedAt,
+            serverTime: data.serverTime,
+          });
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 1000);
+  }, [code, handleRevealStarted]);
+
+  // Connect to WebSocket for real-time synced reveal
+  const connectWebSocket = useCallback(() => {
+    // Prevent multiple connections - check if socket exists (connected or connecting)
+    if (socketRef.current) return;
+
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      timeout: 10000,
+    });
+
+    // Store ref immediately to prevent duplicate connections
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('join-reveal', code);
+    });
+
+    socket.on('viewer-count', (count) => {
+      setViewerCount(count);
+    });
+
+    socket.on('reveal-started', (data) => {
+      handleRevealStarted(data);
+    });
+
+    socket.on('connect_error', () => {
+      // Fall back to polling if WebSocket fails
+      startFallbackPolling();
+    });
+  }, [code, handleRevealStarted, startFallbackPolling]);
+
+  // Initialize on mount and cleanup on unmount
   useEffect(() => {
     checkStatus();
-    return () => stopAudio();
-  }, [code, stopAudio]);
+    return () => {
+      stopAudio();
+      disconnectWebSocket();
+    };
+  }, [code, stopAudio, disconnectWebSocket]);
 
   const checkStatus = async () => {
     try {
@@ -59,9 +223,31 @@ function RevealPage() {
         setPreferences({ ...DEFAULT_PREFERENCES, ...data.preferences });
       }
 
+      // Check if this is the host (owner of the reveal)
+      setIsHost(data.isHost || false);
+
+      // Debug: Log host detection result
+      if (data.preferences?.syncedReveal) {
+        console.log('Synced reveal mode:', { isHost: data.isHost, syncedReveal: true });
+      }
+
+      // Update viewer count if available
+      if (data.viewerCount) {
+        setViewerCount(data.viewerCount);
+      }
+
       if (!data.isSet) {
         setStep('not-ready');
       } else {
+        // Check if reveal already started (for synced mode)
+        if (data.revealStartedAt) {
+          // Reveal already in progress or completed
+          setGender(data.gender);
+          setStep('reveal');
+          triggerConfetti(data.gender);
+          return;
+        }
+
         // Check if password is required
         try {
           const pwCheck = await authService.checkRevealPassword(code);
@@ -70,10 +256,17 @@ function RevealPage() {
             setStep('password');
           } else {
             setStep('ready');
+            // Connect WebSocket for synced reveal (host needs it for viewer count, guest needs it for reveal event)
+            if (data.preferences?.syncedReveal) {
+              connectWebSocket();
+            }
           }
         } catch {
           // If check fails, proceed without password
           setStep('ready');
+          if (data.preferences?.syncedReveal) {
+            connectWebSocket();
+          }
         }
       }
     } catch (err) {
@@ -111,7 +304,6 @@ function RevealPage() {
       setGender(data.gender);
       setStep('countdown');
       if (preferences.soundEnabled) {
-        // Use custom audio if available, pass countdown duration to auto-stop
         const customCountdownAudio = preferences.customAudio?.countdown?.data || null;
         playDrumroll(customCountdownAudio, preferences.countdownDuration);
       }
@@ -122,49 +314,6 @@ function RevealPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const triggerConfetti = (revealedGender, withSound = true) => {
-    const theme = THEME_COLORS[preferences.theme] || THEME_COLORS.classic;
-    const intensity = INTENSITY_SETTINGS[preferences.animationIntensity] || INTENSITY_SETTINGS.medium;
-    const colors = revealedGender === 'boy' ? theme.boy : theme.girl;
-
-    if (withSound && preferences.soundEnabled) {
-      // Use custom audio if available
-      const customCelebrationAudio = preferences.customAudio?.celebration?.data || null;
-      playCelebration(customCelebrationAudio);
-    }
-
-    confetti({
-      particleCount: intensity.particleCount,
-      spread: 100,
-      origin: { y: 0.6 },
-      colors
-    });
-
-    const duration = 5000;
-    const end = Date.now() + duration;
-
-    const frame = () => {
-      confetti({
-        particleCount: Math.ceil(intensity.particleCount / 50),
-        angle: 60,
-        spread: 55,
-        origin: { x: 0, y: 0.8 },
-        colors
-      });
-      confetti({
-        particleCount: Math.ceil(intensity.particleCount / 50),
-        angle: 120,
-        spread: 55,
-        origin: { x: 1, y: 0.8 },
-        colors
-      });
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    };
-    frame();
   };
 
   // Loading
@@ -284,6 +433,9 @@ function RevealPage() {
 
   // Ready
   if (step === 'ready') {
+    const isSynced = preferences.syncedReveal;
+    const showHostView = !isSynced || isHost;
+
     return (
       <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -294,30 +446,109 @@ function RevealPage() {
 
         <div className="stars" />
 
-        <div className="relative z-10 text-center animate-fade-in">
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 text-shadow-lg">Ready?</h1>
-          <p className="text-white/70 text-xl mb-12">
-            The moment you've been waiting for...
-          </p>
-
-          <div className="text-8xl md:text-9xl mb-12 animate-float">🎁</div>
-
-          <button
-            className="group relative bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 font-bold py-6 px-12 rounded-full text-2xl hover:shadow-2xl hover:shadow-amber-400/40 transition-all duration-300 hover:scale-105 disabled:opacity-50"
-            onClick={startReveal}
-            disabled={loading}
-          >
-            {loading ? (
-              <span className="inline-block w-8 h-8 border-4 border-amber-950/30 border-t-amber-950 rounded-full animate-spin" />
-            ) : (
-              'Reveal Now'
+        {showHostView ? (
+          // Host view - can trigger the reveal
+          <div className="relative z-10 text-center animate-fade-in">
+            {/* Host badge for synced mode */}
+            {isSynced && isHost && (
+              <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-400/30 rounded-full px-3 py-1.5 mb-6">
+                <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                <span className="text-amber-300 text-sm font-medium">You are the host</span>
+              </div>
             )}
-          </button>
 
-          <p className="text-white/50 text-sm mt-8">
-            Get ready for the moment you've been waiting for
-          </p>
-        </div>
+            <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 text-shadow-lg">Ready?</h1>
+            <p className="text-white/70 text-xl mb-8">
+              The moment you've been waiting for...
+            </p>
+
+            {/* Viewer count for synced mode - subtract 1 to exclude host */}
+            {isSynced && viewerCount > 1 && (
+              <div className="inline-flex items-center gap-2 bg-purple-500/20 border border-purple-400/30 rounded-full px-4 py-2 mb-8">
+                <div className="flex -space-x-2">
+                  {[...Array(Math.min(viewerCount - 1, 5))].map((_, i) => (
+                    <div key={i} className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 border-2 border-purple-900 flex items-center justify-center text-xs text-white font-bold">
+                      {i === 4 && viewerCount - 1 > 5 ? `+${viewerCount - 5}` : ''}
+                    </div>
+                  ))}
+                </div>
+                <span className="text-purple-300 text-sm font-medium">
+                  {viewerCount - 1} {viewerCount - 1 === 1 ? 'guest is' : 'guests are'} watching
+                </span>
+              </div>
+            )}
+
+            <div className="text-8xl md:text-9xl mb-12 animate-float">🎁</div>
+
+            <button
+              className="group relative bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 font-bold py-6 px-12 rounded-full text-2xl hover:shadow-2xl hover:shadow-amber-400/40 transition-all duration-300 hover:scale-105 disabled:opacity-50"
+              onClick={startReveal}
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="inline-block w-8 h-8 border-4 border-amber-950/30 border-t-amber-950 rounded-full animate-spin" />
+              ) : (
+                'Reveal Now'
+              )}
+            </button>
+
+            <p className="text-white/50 text-sm mt-8">
+              {isSynced
+                ? 'Everyone watching will see the reveal at the same time'
+                : 'Get ready for the moment you\'ve been waiting for'}
+            </p>
+          </div>
+        ) : (
+          // Guest view - waiting for host to start
+          <div className="relative z-10 text-center animate-fade-in max-w-md">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
+              <svg className="w-10 h-10 text-purple-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Get ready...
+            </h1>
+
+            <p className="text-white/60 text-lg mb-8">
+              The big moment is coming! Stay on this page — the reveal will start automatically.
+            </p>
+
+            {viewerCount > 1 && (
+              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 mb-8">
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-white/70 text-sm">
+                  Watching with {viewerCount - 1} {viewerCount - 1 === 1 ? 'other' : 'others'}
+                </span>
+              </div>
+            )}
+
+            <div className="text-7xl mb-8 animate-float">🎁</div>
+
+            <div className="flex items-center justify-center gap-2 text-white/40 text-sm">
+              <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+
+            {/* Host login prompt */}
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <p className="text-white/40 text-sm mb-3">Are you the host?</p>
+              <button
+                onClick={() => navigate(`/auth?redirect=/reveal/${code}`)}
+                className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                Login to control the reveal
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

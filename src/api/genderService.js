@@ -8,9 +8,10 @@ import apiClient from './apiClient';
 const genderService = {
   /**
    * Get status by code (for doctor/reveal pages)
+   * Includes auth token if available to detect if viewer is host (for synced reveal)
    */
   async getStatusByCode(code) {
-    return apiClient.get(`/api/status/${code}`, false);
+    return apiClient.get(`/api/status/${code}`, true);
   },
 
   /**

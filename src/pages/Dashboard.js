@@ -19,6 +19,16 @@ function Dashboard() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
+  // Reveal preferences state
+  const [syncedReveal, setSyncedReveal] = useState(false);
+
+  // Handle preference changes from RevealSettings
+  const handlePreferencesChange = (newPrefs) => {
+    if (typeof newPrefs.syncedReveal !== 'undefined') {
+      setSyncedReveal(newPrefs.syncedReveal);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await refreshStatus();
@@ -39,6 +49,12 @@ function Dashboard() {
         if (data.success) {
           setPasswordEnabled(data.enabled);
           setShowPasswordSection(data.enabled);
+        }
+      }).catch(() => {});
+      // Load preferences for synced reveal indicator
+      authService.getPreferences().then((data) => {
+        if (data.preferences) {
+          setSyncedReveal(data.preferences.syncedReveal || false);
         }
       }).catch(() => {});
     }
@@ -197,7 +213,10 @@ function Dashboard() {
 
           {/* Reveal Settings */}
           <div className="mb-8">
-            <RevealSettings isGenderSet={status?.isSet} />
+            <RevealSettings
+              isGenderSet={status?.isSet}
+              onPreferencesChange={handlePreferencesChange}
+            />
           </div>
 
           {/* Code Cards */}
@@ -278,9 +297,67 @@ function Dashboard() {
                 <span className="text-3xl">🎁</span>
                 <h3 className="text-white font-semibold text-lg">The Big Reveal</h3>
               </div>
-              <p className="text-white/60 text-sm mb-4">
-                Open this at your party
-              </p>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-white/60 text-sm">
+                  Open this at your party
+                </p>
+                <div
+                  className="group relative"
+                  title={syncedReveal ? "Everyone reveals together" : "Reveal at your own pace"}
+                >
+                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs cursor-help ${
+                    syncedReveal
+                      ? 'bg-purple-500/15 text-purple-300'
+                      : 'bg-white/5 text-white/40'
+                  }`}>
+                    {syncedReveal ? (
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    )}
+                    <span>{syncedReveal ? 'Synced' : 'Individual'}</span>
+                  </div>
+                  {/* Compact Tooltip */}
+                  <div className="absolute right-0 top-full mt-1.5 px-3 py-2 bg-slate-900/95 backdrop-blur border border-white/10 rounded-lg text-[11px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 shadow-lg whitespace-nowrap">
+                    <span className="text-white/70">
+                      {syncedReveal ? 'Everyone reveals together' : 'Each guest controls their moment'}
+                    </span>
+                    <span className="text-white/30 mx-1.5">·</span>
+                    <button
+                      className="text-purple-400 hover:text-purple-300 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const settingsEl = document.getElementById('reveal-settings');
+                        if (settingsEl) {
+                          // First scroll to settings and expand
+                          settingsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          setTimeout(() => {
+                            const headerBtn = settingsEl.querySelector('button');
+                            // Check if already expanded by looking for the synced setting
+                            const syncedSetting = document.getElementById('synced-reveal-setting');
+                            if (!syncedSetting) {
+                              headerBtn?.click();
+                            }
+                            // Scroll to the specific setting after expand
+                            setTimeout(() => {
+                              const syncedEl = document.getElementById('synced-reveal-setting');
+                              if (syncedEl) {
+                                syncedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }
+                            }, 350);
+                          }, 400);
+                        }
+                      }}
+                    >
+                      Change
+                    </button>
+                  </div>
+                </div>
+              </div>
               <div
                 className="bg-black/20 rounded-xl px-4 py-3 mb-4 text-center cursor-pointer hover:bg-black/30 transition-all"
                 onClick={() => copyLink('reveal')}
