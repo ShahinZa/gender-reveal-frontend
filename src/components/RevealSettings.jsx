@@ -65,6 +65,40 @@ function RevealSettings({ isGenderSet = false, onPreferencesChange }) {
     });
   }, [savePreferences]);
 
+  // Handle skin tone change - also update emojis with new skin tone
+  const handleSkinToneChange = useCallback((newSkinTone) => {
+    setPreferences(prev => {
+      // Find base emojis by removing any existing skin tone modifiers
+      const getBaseEmoji = (emoji) => {
+        if (!emoji) return emoji;
+        // Skin tone modifiers are in range U+1F3FB to U+1F3FF
+        return emoji.replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '');
+      };
+
+      const baseBoyEmoji = getBaseEmoji(prev.boyEmoji);
+      const baseGirlEmoji = getBaseEmoji(prev.girlEmoji);
+
+      // Check if current emojis support skin tones
+      const boySupports = EMOJI_OPTIONS.boy.find(e => e.base === baseBoyEmoji)?.supportsSkinTone;
+      const girlSupports = EMOJI_OPTIONS.girl.find(e => e.base === baseGirlEmoji)?.supportsSkinTone;
+
+      const newPrefs = {
+        ...prev,
+        skinTone: newSkinTone,
+        boyEmoji: boySupports ? applySkintone(baseBoyEmoji, newSkinTone) : prev.boyEmoji,
+        girlEmoji: girlSupports ? applySkintone(baseGirlEmoji, newSkinTone) : prev.girlEmoji,
+      };
+
+      // Debounce save
+      const timeoutId = setTimeout(() => savePreferences(newPrefs), 500);
+      if (window.preferenceSaveTimeout) {
+        clearTimeout(window.preferenceSaveTimeout);
+      }
+      window.preferenceSaveTimeout = timeoutId;
+      return newPrefs;
+    });
+  }, [savePreferences]);
+
   // Handle audio file upload
   const handleAudioUpload = useCallback(async (type, file) => {
     setAudioError(prev => ({ ...prev, [type]: null }));
@@ -597,7 +631,7 @@ function RevealSettings({ isGenderSet = false, onPreferencesChange }) {
                 {SKIN_TONES.map((tone) => (
                   <button
                     key={tone.id}
-                    onClick={() => handleChange('skinTone', tone.modifier)}
+                    onClick={() => handleSkinToneChange(tone.modifier)}
                     className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all ${
                       (preferences.skinTone || '') === tone.modifier
                         ? 'bg-white/20 border-2 border-white/50'

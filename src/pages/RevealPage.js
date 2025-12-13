@@ -794,8 +794,13 @@ function RevealPage() {
     const glowClass = isBoy ? theme.glowBoy : theme.glowGirl;
     const customMessage = preferences.customMessage || 'Congratulations!';
 
+    const isSynced = preferences.syncedReveal;
+
     return (
       <div className={`min-h-screen relative overflow-hidden flex items-center justify-center bg-gradient-to-br ${bgGradient}`}>
+        {/* Heart reactions for synced mode */}
+        <HeartReactions hearts={hearts} onSendHeart={sendHeart} enabled={isSynced} />
+
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className={`absolute top-20 left-10 w-72 h-72 ${glowClass} rounded-full blur-3xl animate-pulse`} />
           <div className={`absolute bottom-20 right-10 w-96 h-96 ${glowClass} rounded-full blur-3xl animate-pulse`} />
