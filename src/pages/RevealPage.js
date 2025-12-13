@@ -212,6 +212,7 @@ function RevealPage() {
 
     // Listen for hearts from other users
     socket.on('heart-received', () => {
+      console.log('Heart received from another user!');
       spawnHeartRef.current?.();
     });
 
