@@ -899,7 +899,7 @@ function RevealPage() {
             <div className="flex items-center gap-1.5">
               {[...Array(4)].map((_, i) => {
                 const sizes = [3, 4, 5, 6]; // Grow towards center
-                const opacities = [0.3, 0.45, 0.6, 0.8];
+                const opacity = 0.8; // Consistent opacity
                 const delays = [0.9, 0.75, 0.6, 0.45]; // Appear from center outward
                 const idx = 3 - i; // Reverse index for left side
                 return (
@@ -919,10 +919,10 @@ function RevealPage() {
                     {/* Outer glow */}
                     <motion.div
                       className={`absolute inset-0 rounded-full blur-sm ${isBoy ? 'bg-blue-400' : 'bg-pink-400'}`}
-                      style={{ opacity: opacities[idx] * 0.5 }}
+                      style={{ opacity: opacity * 0.5 }}
                       animate={{
                         scale: [1, 1.5, 1],
-                        opacity: [opacities[idx] * 0.3, opacities[idx] * 0.6, opacities[idx] * 0.3],
+                        opacity: [opacity * 0.3, opacity * 0.6, opacity * 0.3],
                       }}
                       transition={{
                         duration: 2 + idx * 0.3,
@@ -937,7 +937,7 @@ function RevealPage() {
                       style={{
                         width: sizes[idx] * 2,
                         height: sizes[idx] * 2,
-                        opacity: opacities[idx],
+                        opacity: opacity,
                       }}
                       animate={{
                         scale: [1, 1.15, 1],
@@ -1073,7 +1073,7 @@ function RevealPage() {
             <div className="flex items-center gap-1.5">
               {[...Array(4)].map((_, i) => {
                 const sizes = [3, 4, 5, 6]; // Grow away from center (mirrored)
-                const opacities = [0.3, 0.45, 0.6, 0.8]; // Fade in away from center
+                const opacity = 0.8; // Consistent opacity
                 const delays = [0.45, 0.6, 0.75, 0.9]; // Appear from center outward
                 return (
                   <motion.div
@@ -1092,10 +1092,10 @@ function RevealPage() {
                     {/* Outer glow */}
                     <motion.div
                       className={`absolute inset-0 rounded-full blur-sm ${isBoy ? 'bg-blue-400' : 'bg-pink-400'}`}
-                      style={{ opacity: opacities[i] * 0.5 }}
+                      style={{ opacity: opacity * 0.5 }}
                       animate={{
                         scale: [1, 1.5, 1],
-                        opacity: [opacities[i] * 0.3, opacities[i] * 0.6, opacities[i] * 0.3],
+                        opacity: [opacity * 0.3, opacity * 0.6, opacity * 0.3],
                       }}
                       transition={{
                         duration: 2 + i * 0.3,
@@ -1110,7 +1110,7 @@ function RevealPage() {
                       style={{
                         width: sizes[i] * 2,
                         height: sizes[i] * 2,
-                        opacity: opacities[i],
+                        opacity: opacity,
                       }}
                       animate={{
                         scale: [1, 1.15, 1],
