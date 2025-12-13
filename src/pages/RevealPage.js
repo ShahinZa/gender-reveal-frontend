@@ -335,9 +335,40 @@ function RevealPage() {
       }
 
       // Store preferences from API response
+      let userPrefs = { ...DEFAULT_PREFERENCES };
       if (data.preferences) {
-        setPreferences({ ...DEFAULT_PREFERENCES, ...data.preferences });
+        userPrefs = { ...userPrefs, ...data.preferences };
       }
+
+      // Fetch custom audio separately (not included in status response for performance)
+      // Only fetch if metadata indicates custom audio exists
+      if (userPrefs.customAudio?.countdown?.fileName || userPrefs.customAudio?.celebration?.fileName) {
+        try {
+          const [countdownAudio, celebrationAudio] = await Promise.all([
+            userPrefs.customAudio?.countdown?.fileName ? genderService.getAudioByCode(code, 'countdown') : null,
+            userPrefs.customAudio?.celebration?.fileName ? genderService.getAudioByCode(code, 'celebration') : null,
+          ]);
+
+          if (countdownAudio?.audioData) {
+            userPrefs.customAudio = userPrefs.customAudio || {};
+            userPrefs.customAudio.countdown = {
+              ...userPrefs.customAudio.countdown,
+              data: countdownAudio.audioData,
+            };
+          }
+          if (celebrationAudio?.audioData) {
+            userPrefs.customAudio = userPrefs.customAudio || {};
+            userPrefs.customAudio.celebration = {
+              ...userPrefs.customAudio.celebration,
+              data: celebrationAudio.audioData,
+            };
+          }
+        } catch {
+          // Audio fetch failed, continue without custom audio
+        }
+      }
+
+      setPreferences(userPrefs);
 
       // Check if this is the host (owner of the reveal)
       setIsHost(data.isHost || false);

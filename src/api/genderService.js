@@ -34,6 +34,19 @@ const genderService = {
   async revealGender(code) {
     return apiClient.post('/api/reveal', { code }, false);
   },
+
+  /**
+   * Get custom audio by reveal code (public - no auth required)
+   * @param {string} code - Reveal code
+   * @param {string} type - 'countdown' or 'celebration'
+   */
+  async getAudioByCode(code, type) {
+    try {
+      return await apiClient.get(`/api/audio/${code}/${type}`, false);
+    } catch {
+      return null; // Audio not found or error
+    }
+  },
 };
 
 export default genderService;
