@@ -1202,16 +1202,11 @@ function RevealPage() {
             onClick={() => triggerConfetti(gender)}
           >
             <span className="flex items-center gap-2">
-              {/* Confetti SVG icon */}
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5.8 11.3 2 22l10.7-3.79" />
-                <path d="M4 3h.01" />
-                <path d="M22 8h.01" />
-                <path d="M15 2h.01" />
-                <path d="M22 20h.01" />
-                <path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12v0c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" />
-                <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11v0c-.11.7-.72 1.22-1.43 1.22H17" />
-                <path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98v0C9.52 4.9 9 5.52 9 6.23V7" />
+              {/* Sparkles SVG icon */}
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0L14.59 8.41L23 11L14.59 13.59L12 22L9.41 13.59L1 11L9.41 8.41L12 0Z" />
+                <path d="M5 2L5.88 4.12L8 5L5.88 5.88L5 8L4.12 5.88L2 5L4.12 4.12L5 2Z" opacity="0.6" />
+                <path d="M19 16L19.88 18.12L22 19L19.88 19.88L19 22L18.12 19.88L16 19L18.12 18.12L19 16Z" opacity="0.6" />
               </svg>
               More Confetti!
             </span>
