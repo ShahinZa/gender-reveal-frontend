@@ -893,17 +893,18 @@ function RevealPage() {
             {displayValues.babyCount === 1 ? displayValues.genderText : displayValues.genderTextPlural}!
           </h1>
 
-          {/* Celebration emojis */}
-          <div className="flex justify-center gap-4 mb-8">
+          {/* Celebration divider - subtle heart accents */}
+          <div className="flex items-center justify-center gap-3 mb-8 animate-float-up" style={{ animationDelay: '0.3s' }}>
+            <div className={`h-px w-12 md:w-16 ${isBoy ? 'bg-gradient-to-r from-transparent to-blue-300/40' : 'bg-gradient-to-r from-transparent to-pink-300/40'}`} />
             {displayValues.celebrationEmojis.map((emoji, i) => (
               <span
                 key={i}
-                className="text-4xl md:text-5xl animate-sparkle"
-                style={{ animationDelay: `${i * 0.2}s` }}
+                className="text-2xl md:text-3xl opacity-70"
               >
                 {emoji}
               </span>
             ))}
+            <div className={`h-px w-12 md:w-16 ${isBoy ? 'bg-gradient-to-l from-transparent to-blue-300/40' : 'bg-gradient-to-l from-transparent to-pink-300/40'}`} />
           </div>
 
           <p className="text-3xl md:text-4xl font-script mb-12 animate-float-up text-white/90"
@@ -919,6 +920,25 @@ function RevealPage() {
             More Confetti!
           </button>
         </div>
+
+        {/* Live viewer count - fixed bottom left (matching heart button style on right) */}
+        {isSynced && viewerCount > 1 && (
+          <div className="fixed bottom-8 left-8 z-40">
+            <div className="relative w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex flex-col items-center justify-center shadow-lg shadow-black/10">
+              {/* Subtle green glow ring */}
+              <div className="absolute inset-0 rounded-full border border-green-400/30" />
+
+              {/* Count number */}
+              <span className="text-white font-bold text-xl leading-none">{viewerCount}</span>
+
+              {/* Live indicator with inline dot */}
+              <div className="flex items-center gap-1 mt-0.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                <span className="text-green-400/80 text-[8px] font-semibold tracking-wide">LIVE</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

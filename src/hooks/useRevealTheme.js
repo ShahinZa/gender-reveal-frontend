@@ -62,8 +62,8 @@ const useRevealTheme = ({ preferences, gender }) => {
     genderText: isBoy ? 'BOY' : 'GIRL',
     genderTextPlural: isBoy ? 'BOYS' : 'GIRLS',
     celebrationEmojis: isBoy
-      ? ['🩵', '⭐', '🩵', '⭐', '🩵']
-      : ['🩷', '⭐', '🩷', '⭐', '🩷'],
+      ? ['🩵', '🩵', '🩵']
+      : ['🩷', '🩷', '🩷'],
   }), [isBoy, preferences?.boyEmoji, preferences?.girlEmoji, preferences?.customMessage, preferences?.babyCount]);
 
   return {
