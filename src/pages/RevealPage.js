@@ -280,6 +280,10 @@ function RevealPage() {
           setGender(data.gender);
           setStep('reveal');
           triggerConfetti(data.gender);
+          // Still connect WebSocket for heart reactions in synced mode
+          if (data.preferences?.syncedReveal) {
+            connectWebSocket();
+          }
           return;
         }
 
