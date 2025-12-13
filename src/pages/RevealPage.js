@@ -72,7 +72,7 @@ function RevealPage() {
   const spawnHeartRef = useRef(null); // Ref to hold latest spawnHeart function
   const handleRevealStartedRef = useRef(null); // Ref to hold latest handler
 
-  const { playDrumroll, playCelebration, stopAudio } = useAudio();
+  const { preloadDrumroll, preloadCelebration, playDrumroll, playCelebration, stopAudio } = useAudio();
 
   // Heart reactions hook
   const { hearts, sendHeart, spawnHeart } = useHeartReactions({
@@ -87,6 +87,16 @@ function RevealPage() {
 
   // Keep spawnHeart ref updated for WebSocket listener
   spawnHeartRef.current = spawnHeart;
+
+  // Preload audio when preferences are loaded (instant playback when user clicks reveal)
+  useEffect(() => {
+    if (preferences.soundEnabled) {
+      const countdownUrl = buildAudioUrl(preferences.customAudio?.countdown?.url);
+      const celebrationUrl = buildAudioUrl(preferences.customAudio?.celebration?.url);
+      preloadDrumroll(countdownUrl);
+      preloadCelebration(celebrationUrl);
+    }
+  }, [preferences.soundEnabled, preferences.customAudio, preloadDrumroll, preloadCelebration]);
 
   // Memoized confetti trigger - defined early as it's used by multiple callbacks
   const triggerConfetti = useCallback((revealedGender, withSound = true) => {
