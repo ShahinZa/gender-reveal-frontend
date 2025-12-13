@@ -506,22 +506,129 @@ function RevealPage() {
   if (step === 'not-ready') {
     return (
       <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+        {/* Background gradients */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-3xl" />
         </div>
 
         <div className="relative z-10 w-full max-w-md">
-          <Card className="text-center">
-            <div className="text-6xl mb-4">🎁</div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Not Yet!</h1>
-            <p className="text-white/60 mb-6">
-              The big secret is still being kept. Check back soon!
-            </p>
-            <Button variant="secondary" fullWidth onClick={checkStatus}>
+          <motion.div
+            className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl p-8 text-center"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
+            {/* Gift icon with glow and float animation */}
+            <div className="relative inline-block mb-6">
+              {/* Glow ring behind gift */}
+              <motion.div
+                className="absolute inset-0 rounded-full bg-amber-400/20 blur-xl"
+                animate={{
+                  scale: [1, 1.3, 1],
+                  opacity: [0.3, 0.5, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+              {/* Floating gift */}
+              <motion.div
+                className="relative text-7xl"
+                animate={{
+                  y: [0, -8, 0],
+                  rotate: [0, 3, -3, 0],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              >
+                🎁
+              </motion.div>
+
+              {/* Small decorative sparkles */}
+              {[...Array(4)].map((_, i) => {
+                const positions = [
+                  { top: '-10px', right: '-5px' },
+                  { top: '5px', left: '-10px' },
+                  { bottom: '0px', right: '-8px' },
+                  { bottom: '-5px', left: '0px' },
+                ];
+                return (
+                  <motion.div
+                    key={i}
+                    className="absolute"
+                    style={positions[i]}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{
+                      opacity: [0, 1, 0],
+                      scale: [0, 1, 0],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      delay: i * 0.5,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    <svg className="w-3 h-3 text-amber-300" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
+                    </svg>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Heading */}
+            <motion.h1
+              className="text-2xl md:text-3xl font-bold text-white mb-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              Not Yet!
+            </motion.h1>
+
+            {/* Subtext */}
+            <motion.p
+              className="text-white/60 mb-2 text-base"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              The big secret is still being kept.
+            </motion.p>
+            <motion.p
+              className="text-white/40 mb-8 text-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              Check back soon for the reveal!
+            </motion.p>
+
+            {/* Enhanced button */}
+            <motion.button
+              className="w-full py-3 px-6 rounded-xl font-medium text-base text-white bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-400/30 hover:border-amber-400/50 hover:from-amber-500/30 hover:via-orange-500/30 hover:to-amber-500/30 transition-all duration-300 flex items-center justify-center gap-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={checkStatus}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+              </svg>
               Check Now
-            </Button>
-          </Card>
+            </motion.button>
+          </motion.div>
         </div>
       </div>
     );
