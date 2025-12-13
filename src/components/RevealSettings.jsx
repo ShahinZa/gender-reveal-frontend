@@ -489,10 +489,10 @@ function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }
                       </svg>
                       <span className="text-white/80 text-sm">Countdown Sound</span>
                     </div>
-                    {preferences.customAudio?.countdown ? (
+                    {preferences.customAudio?.countdown?.fileName ? (
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-white/50 text-xs truncate max-w-[140px]" title={preferences.customAudio.countdown.fileName}>
-                          {truncateFileName(preferences.customAudio.countdown.fileName)} ({formatFileSize(preferences.customAudio.countdown.size)})
+                          {truncateFileName(preferences.customAudio.countdown.fileName)} ({formatFileSize(preferences.customAudio.countdown.size || 0)})
                         </span>
                         <button
                           onClick={() => handleAudioDelete('countdown')}
@@ -538,7 +538,7 @@ function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
-                        {preferences.customAudio?.countdown ? 'Replace' : 'Upload'} Countdown MP3
+                        {preferences.customAudio?.countdown?.fileName ? 'Replace' : 'Upload'} Countdown MP3
                       </>
                     )}
                   </button>
@@ -556,10 +556,10 @@ function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }
                       </svg>
                       <span className="text-white/80 text-sm">Celebration Sound</span>
                     </div>
-                    {preferences.customAudio?.celebration ? (
+                    {preferences.customAudio?.celebration?.fileName ? (
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-white/50 text-xs truncate max-w-[140px]" title={preferences.customAudio.celebration.fileName}>
-                          {truncateFileName(preferences.customAudio.celebration.fileName)} ({formatFileSize(preferences.customAudio.celebration.size)})
+                          {truncateFileName(preferences.customAudio.celebration.fileName)} ({formatFileSize(preferences.customAudio.celebration.size || 0)})
                         </span>
                         <button
                           onClick={() => handleAudioDelete('celebration')}
@@ -605,7 +605,7 @@ function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
-                        {preferences.customAudio?.celebration ? 'Replace' : 'Upload'} Celebration MP3
+                        {preferences.customAudio?.celebration?.fileName ? 'Replace' : 'Upload'} Celebration MP3
                       </>
                     )}
                   </button>
