@@ -30,7 +30,7 @@ const PreviewBadge = ({ isPreviewMode }) => {
   );
 };
 
-const SOCKET_URL = process.env.REACT_APP_API_URL || 'https://gender-production.up.railway.app';
+const SOCKET_URL = process.env.REACT_APP_API_URL || 'https://hidden-simonette-baby-reveal-patry-b1dd6946.koyeb.app';
 
 function RevealPage() {
   const { code } = useParams();

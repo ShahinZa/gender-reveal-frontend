@@ -4,7 +4,7 @@
  * Single Responsibility: HTTP communication only
  */
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://gender-production.up.railway.app';
+const API_URL = process.env.REACT_APP_API_URL || 'https://hidden-simonette-baby-reveal-patry-b1dd6946.koyeb.app';
 
 class ApiError extends Error {
   constructor(message, status, data) {
