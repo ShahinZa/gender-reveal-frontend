@@ -1,9 +1,14 @@
 import { useRef, useCallback, useState } from 'react';
 
+// Global audio context for unlocking audio playback
+let audioContext = null;
+let audioUnlocked = false;
+
 /**
  * Custom hook for audio effects with preloading support
  * Preload audio URLs early so playback starts instantly when needed
  * Exposes loading status for UI indicators
+ * Handles browser autoplay policy by tracking user interaction
  */
 const useAudio = () => {
   const drumrollRef = useRef(null);
@@ -17,6 +22,54 @@ const useAudio = () => {
   // Track loading status for UI indicator
   const [drumrollStatus, setDrumrollStatus] = useState('idle'); // 'idle' | 'loading' | 'ready' | 'error'
   const [celebrationStatus, setCelebrationStatus] = useState('idle');
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState(audioUnlocked);
+
+  /**
+   * Unlock audio playback - must be called from a user gesture (click/tap)
+   * This creates an AudioContext and plays a silent buffer to unlock browser audio
+   * @returns {boolean} true if unlock succeeded
+   */
+  const unlockAudio = useCallback(() => {
+    if (audioUnlocked) {
+      console.log('Audio already unlocked');
+      return true;
+    }
+
+    try {
+      // Create AudioContext if needed
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!audioContext) {
+        audioContext = new AudioContextClass();
+      }
+
+      // Resume if suspended (required for some browsers)
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
+      // Create and play a silent buffer to fully unlock audio
+      const buffer = audioContext.createBuffer(1, 1, 22050);
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioContext.destination);
+      source.start(0);
+
+      // Also play a silent HTML5 Audio element to unlock that path too
+      const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
+      silentAudio.volume = 0;
+      silentAudio.play().catch(() => {
+        // Ignore errors - the AudioContext approach is the primary unlock
+      });
+
+      audioUnlocked = true;
+      setIsAudioUnlocked(true);
+      console.log('Audio unlocked successfully');
+      return true;
+    } catch (error) {
+      console.log('Audio unlock failed:', error.message);
+      return false;
+    }
+  }, []);
 
   /**
    * Preload drumroll audio for instant playback later
@@ -147,16 +200,22 @@ const useAudio = () => {
         preloadedDrumrollUrl.current = src;
       }
 
+      // Only attempt playback if audio has been unlocked
+      if (!audioUnlocked) {
+        console.log('Audio play skipped: audio not unlocked (call unlockAudio first)');
+        return;
+      }
+
       drumrollRef.current.play().catch((err) => {
         console.log('Audio play failed, retrying with new element:', err.message);
-        // Retry with a fresh Audio element
+        // Retry with a fresh Audio element (handles some edge cases)
         const freshAudio = new Audio();
         freshAudio.crossOrigin = 'anonymous';
         freshAudio.volume = 0.8;
         freshAudio.src = src;
         drumrollRef.current = freshAudio;
-        freshAudio.play().catch(() => {
-          console.log('Audio autoplay blocked');
+        freshAudio.play().catch((retryErr) => {
+          console.log('Audio retry failed:', retryErr.message);
         });
       });
 
@@ -208,16 +267,22 @@ const useAudio = () => {
         preloadedCelebrationUrl.current = src;
       }
 
+      // Only attempt playback if audio has been unlocked
+      if (!audioUnlocked) {
+        console.log('Celebration play skipped: audio not unlocked (call unlockAudio first)');
+        return;
+      }
+
       celebrationRef.current.play().catch((err) => {
         console.log('Celebration play failed, retrying with new element:', err.message);
-        // Retry with a fresh Audio element
+        // Retry with a fresh Audio element (handles some edge cases)
         const freshAudio = new Audio();
         freshAudio.crossOrigin = 'anonymous';
         freshAudio.volume = 0.8;
         freshAudio.src = src;
         celebrationRef.current = freshAudio;
-        freshAudio.play().catch(() => {
-          console.log('Audio autoplay blocked');
+        freshAudio.play().catch((retryErr) => {
+          console.log('Celebration retry failed:', retryErr.message);
         });
       });
     } catch (error) {
@@ -261,8 +326,13 @@ const useAudio = () => {
   }, [drumrollStatus, celebrationStatus]);
 
   return {
+    // Audio unlock (must be called from user gesture before playback works)
+    unlockAudio,
+    isAudioUnlocked,
+    // Preload functions
     preloadDrumroll,
     preloadCelebration,
+    // Playback functions
     playDrumroll,
     playCelebration,
     stopAudio,

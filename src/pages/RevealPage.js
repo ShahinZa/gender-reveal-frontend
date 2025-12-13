@@ -72,7 +72,7 @@ function RevealPage() {
   const spawnHeartRef = useRef(null); // Ref to hold latest spawnHeart function
   const handleRevealStartedRef = useRef(null); // Ref to hold latest handler
 
-  const { preloadDrumroll, preloadCelebration, playDrumroll, playCelebration, stopAudio, audioStatus } = useAudio();
+  const { unlockAudio, isAudioUnlocked, preloadDrumroll, preloadCelebration, playDrumroll, playCelebration, stopAudio, audioStatus } = useAudio();
 
   // Heart reactions hook
   const { hearts, sendHeart, spawnHeart } = useHeartReactions({
@@ -304,12 +304,14 @@ function RevealPage() {
       setPreferences(userPrefs);
       setGender(previewGender);
       setIsHost(data.isHost || false);
-      setStep('ready');
+      // Show sound gate if sound is enabled and audio not unlocked
+      const needsSoundGate = userPrefs.soundEnabled && !isAudioUnlocked;
+      setStep(needsSoundGate ? 'sound-gate' : 'ready');
     } catch (err) {
       setError(err.message || 'Invalid or expired link');
       setStep('error');
     }
-  }, [previewGender, code]);
+  }, [previewGender, code, isAudioUnlocked]);
 
   // Initialize on mount and cleanup on unmount
   useEffect(() => {
@@ -386,7 +388,9 @@ function RevealPage() {
             setPasswordRequired(true);
             setStep('password');
           } else {
-            setStep('ready');
+            // Show sound gate if sound is enabled and audio not unlocked
+            const needsSoundGate = userPrefs.soundEnabled && !isAudioUnlocked;
+            setStep(needsSoundGate ? 'sound-gate' : 'ready');
             // Connect WebSocket for synced reveal (host needs it for viewer count, guest needs it for reveal event)
             if (data.preferences?.syncedReveal) {
               connectWebSocket();
@@ -394,7 +398,8 @@ function RevealPage() {
           }
         } catch {
           // If check fails, proceed without password
-          setStep('ready');
+          const needsSoundGate = userPrefs.soundEnabled && !isAudioUnlocked;
+          setStep(needsSoundGate ? 'sound-gate' : 'ready');
           if (data.preferences?.syncedReveal) {
             connectWebSocket();
           }
@@ -416,7 +421,9 @@ function RevealPage() {
     try {
       const result = await authService.verifyRevealPassword(code, passwordInput);
       if (result.valid) {
-        setStep('ready');
+        // Show sound gate if sound is enabled and audio not unlocked
+        const needsSoundGate = preferences.soundEnabled && !isAudioUnlocked;
+        setStep(needsSoundGate ? 'sound-gate' : 'ready');
       } else {
         setPasswordError('Incorrect password');
       }
@@ -692,6 +699,99 @@ function RevealPage() {
             </Button>
           </Card>
         </div>
+      </div>
+    );
+  }
+
+  // Sound Gate - show before ready when sound is enabled but not unlocked
+  if (step === 'sound-gate') {
+    const handleEnableSound = () => {
+      unlockAudio();
+      setStep('ready');
+    };
+
+    const handleContinueSilent = () => {
+      // Disable sound for this session
+      setPreferences(prev => ({ ...prev, soundEnabled: false }));
+      setStep('ready');
+    };
+
+    return (
+      <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+        <PreviewBadge isPreviewMode={isPreviewMode} />
+
+        {/* Background gradients */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/15 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/15 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-3xl" />
+        </div>
+
+        <motion.div
+          className="relative z-10 w-full max-w-md"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl p-8 text-center">
+            {/* Sound icon with animation */}
+            <motion.div
+              className="relative inline-block mb-6"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/20 border border-amber-400/30 flex items-center justify-center">
+                <svg className="w-10 h-10 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+              </div>
+              {/* Sound waves animation */}
+              <motion.div
+                className="absolute top-1/2 left-full -translate-y-1/2 ml-1"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <div className="flex gap-0.5">
+                  <div className="w-1 h-3 bg-amber-400/60 rounded-full" />
+                  <div className="w-1 h-5 bg-amber-400/50 rounded-full" />
+                  <div className="w-1 h-4 bg-amber-400/40 rounded-full" />
+                </div>
+              </motion.div>
+            </motion.div>
+
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              Enable Sound?
+            </h1>
+            <p className="text-white/60 mb-8 text-base">
+              This reveal includes sound effects. Enable audio for the full experience!
+            </p>
+
+            {/* Enable Sound button - primary action */}
+            <motion.button
+              className="w-full py-4 px-6 rounded-xl font-semibold text-lg text-amber-950 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:shadow-lg hover:shadow-amber-400/30 transition-all duration-300 flex items-center justify-center gap-3 mb-4"
+              onClick={handleEnableSound}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+              Enable Sound
+            </motion.button>
+
+            {/* Continue without sound - secondary action */}
+            <button
+              className="w-full py-3 px-6 rounded-xl font-medium text-base text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-300"
+              onClick={handleContinueSilent}
+            >
+              Continue without sound
+            </button>
+
+            <p className="text-white/40 text-xs mt-6">
+              Browsers require your permission to play audio
+            </p>
+          </div>
+        </motion.div>
       </div>
     );
   }
