@@ -32,6 +32,12 @@ function RevealPage() {
   const socketRef = useRef(null);
   const pollingRef = useRef(null); // Fallback polling
 
+  // Heart reactions state
+  const [floatingHearts, setFloatingHearts] = useState([]);
+  const heartIdRef = useRef(0);
+  const lastHeartTime = useRef(0);
+  const spawnHeartRef = useRef(null);
+
   const { playDrumroll, playCelebration, stopAudio } = useAudio();
 
   // Memoized confetti trigger - defined early as it's used by multiple callbacks
@@ -145,6 +151,37 @@ function RevealPage() {
     }
   }, [code]);
 
+  // Spawn a floating heart animation (defined early as it's used by WebSocket)
+  const spawnHeart = useCallback(() => {
+    const id = heartIdRef.current++;
+    const heart = {
+      id,
+      x: 70 + Math.random() * 20, // Random position near the heart button
+      color: ['#ff6b6b', '#ff8787', '#ffa8a8', '#ff4757', '#ff6348'][Math.floor(Math.random() * 5)],
+      scale: 0.8 + Math.random() * 0.4,
+    };
+    setFloatingHearts(prev => [...prev, heart]);
+    // Remove heart after animation completes
+    setTimeout(() => {
+      setFloatingHearts(prev => prev.filter(h => h.id !== id));
+    }, 2000);
+  }, []);
+
+  // Keep ref updated for WebSocket listener
+  spawnHeartRef.current = spawnHeart;
+
+  // Send heart reaction via WebSocket (rate limited to 1 per 300ms)
+  const sendHeart = useCallback(() => {
+    const now = Date.now();
+    if (now - lastHeartTime.current < 300) return; // Rate limit
+    lastHeartTime.current = now;
+
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('send-heart', code);
+      spawnHeart(); // Show immediately for sender
+    }
+  }, [code, spawnHeart]);
+
   // Fallback polling if WebSocket fails (defined before connectWebSocket as it's called by it)
   const startFallbackPolling = useCallback(() => {
     if (pollingRef.current) return;
@@ -191,6 +228,11 @@ function RevealPage() {
 
     socket.on('reveal-started', (data) => {
       handleRevealStarted(data);
+    });
+
+    socket.on('heart-received', () => {
+      // Use ref to always get latest spawnHeart function
+      spawnHeartRef.current?.();
     });
 
     socket.on('connect_error', () => {
@@ -431,6 +473,43 @@ function RevealPage() {
     );
   }
 
+  // Floating hearts component
+  const FloatingHearts = () => (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+      {floatingHearts.map(heart => (
+        <motion.div
+          key={heart.id}
+          initial={{ opacity: 1, y: 0, x: `${heart.x}vw`, scale: heart.scale }}
+          animate={{ opacity: 0, y: -400, scale: heart.scale * 1.2 }}
+          transition={{ duration: 2, ease: 'easeOut' }}
+          className="absolute bottom-32"
+          style={{ color: heart.color }}
+        >
+          <svg className="w-8 h-8 drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+          </svg>
+        </motion.div>
+      ))}
+    </div>
+  );
+
+  // Heart button component for synced mode
+  const HeartButton = () => (
+    <button
+      onClick={sendHeart}
+      className="fixed bottom-8 right-8 z-40 w-14 h-14 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 active:scale-95 transition-all duration-200 group"
+      aria-label="Send heart"
+    >
+      <svg
+        className="w-7 h-7 text-red-400 group-hover:text-red-300 transition-colors"
+        fill="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+      </svg>
+    </button>
+  );
+
   // Ready
   if (step === 'ready') {
     const isSynced = preferences.syncedReveal;
@@ -438,6 +517,10 @@ function RevealPage() {
 
     return (
       <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+        {/* Heart reactions for synced mode */}
+        {isSynced && <FloatingHearts />}
+        {isSynced && <HeartButton />}
+
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
