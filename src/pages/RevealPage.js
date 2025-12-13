@@ -1192,13 +1192,87 @@ function RevealPage() {
             {displayValues.customMessage}
           </p>
 
-          <button
-            className="py-4 px-8 rounded-full font-semibold text-lg transition-all duration-300 hover:scale-105 animate-float-up bg-white/20 hover:bg-white/30 text-white border border-white/30"
-            style={{ animationDelay: '0.6s' }}
+          {/* Enhanced Confetti Button */}
+          <motion.button
+            className={`relative group py-4 px-10 rounded-full font-semibold text-lg text-white overflow-hidden ${
+              isBoy
+                ? 'bg-gradient-to-r from-blue-500/40 via-blue-400/50 to-blue-500/40 border border-blue-300/40 shadow-lg shadow-blue-500/20'
+                : 'bg-gradient-to-r from-pink-500/40 via-pink-400/50 to-pink-500/40 border border-pink-300/40 shadow-lg shadow-pink-500/20'
+            }`}
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: 0.5,
+              delay: 0.6,
+              type: 'spring',
+              stiffness: 200,
+              damping: 15,
+            }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: isBoy
+                ? '0 0 30px rgba(59, 130, 246, 0.5)'
+                : '0 0 30px rgba(236, 72, 153, 0.5)',
+            }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => triggerConfetti(gender)}
           >
-            More Confetti!
-          </button>
+            {/* Animated glow ring */}
+            <motion.div
+              className={`absolute inset-0 rounded-full ${isBoy ? 'bg-blue-400/20' : 'bg-pink-400/20'}`}
+              animate={{
+                scale: [1, 1.05, 1],
+                opacity: [0.3, 0.5, 0.3],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            />
+
+            {/* Shimmer effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
+              animate={{
+                x: ['-100%', '200%'],
+              }}
+              transition={{
+                duration: 2.5,
+                repeat: Infinity,
+                repeatDelay: 3,
+                ease: 'easeInOut',
+              }}
+            />
+
+            {/* Button content */}
+            <span className="relative flex items-center gap-2">
+              <motion.span
+                animate={{ rotate: [0, 15, -15, 0] }}
+                transition={{
+                  duration: 0.6,
+                  repeat: Infinity,
+                  repeatDelay: 2,
+                  ease: 'easeInOut',
+                }}
+              >
+                🎊
+              </motion.span>
+              More Confetti!
+              <motion.span
+                animate={{ rotate: [0, -15, 15, 0] }}
+                transition={{
+                  duration: 0.6,
+                  repeat: Infinity,
+                  repeatDelay: 2,
+                  ease: 'easeInOut',
+                  delay: 0.1,
+                }}
+              >
+                🎊
+              </motion.span>
+            </span>
+          </motion.button>
         </div>
 
         {/* Live viewer count - fixed bottom left (matching heart button style on right) */}
