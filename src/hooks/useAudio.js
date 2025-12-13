@@ -18,6 +18,9 @@ const useAudio = () => {
   // Track preloaded URLs to avoid duplicate loading
   const preloadedDrumrollUrl = useRef(null);
   const preloadedCelebrationUrl = useRef(null);
+  // Track in-progress preloads to prevent duplicate concurrent requests
+  const drumrollLoadingUrl = useRef(null);
+  const celebrationLoadingUrl = useRef(null);
 
   // Track loading status for UI indicator
   const [drumrollStatus, setDrumrollStatus] = useState('idle'); // 'idle' | 'loading' | 'ready' | 'error'
@@ -77,10 +80,20 @@ const useAudio = () => {
    * @param {string|null} audioUrl - URL to preload (null uses default)
    */
   const preloadDrumroll = useCallback(async (audioUrl = null) => {
-    const src = audioUrl || '/drumroll.mp3';
+    // Skip if no custom URL provided (default files don't exist on API)
+    if (!audioUrl) {
+      return;
+    }
+
+    const src = audioUrl;
 
     // Skip if already preloaded with same URL
     if (preloadedDrumrollUrl.current === src && drumrollRef.current) {
+      return;
+    }
+
+    // Skip if already loading this URL (prevent concurrent duplicates)
+    if (drumrollLoadingUrl.current === src) {
       return;
     }
 
@@ -89,8 +102,8 @@ const useAudio = () => {
       return;
     }
 
-    // Mark URL immediately to prevent duplicate calls
-    preloadedDrumrollUrl.current = src;
+    // Mark as loading immediately
+    drumrollLoadingUrl.current = src;
 
     // Clean up previous
     if (drumrollRef.current) {
@@ -101,22 +114,19 @@ const useAudio = () => {
     setDrumrollStatus('loading');
 
     try {
-      // Fetch audio data directly - gives us full control, no browser retries
       const response = await fetch(src);
-
-      // Log response details for debugging
-      const contentType = response.headers.get('content-type');
-      const contentEncoding = response.headers.get('content-encoding');
-      console.log(`Drumroll fetch: status=${response.status}, type=${contentType}, encoding=${contentEncoding}`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const blob = await response.blob();
-      console.log(`Drumroll blob: ${blob.size} bytes, type=${blob.type}`);
+      // Validate content type
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('audio')) {
+        throw new Error(`Invalid content type: ${contentType}`);
+      }
 
-      // Validate blob has data
+      const blob = await response.blob();
       if (blob.size === 0) {
         throw new Error('Empty response');
       }
@@ -136,11 +146,14 @@ const useAudio = () => {
       });
 
       drumrollRef.current = audio;
+      preloadedDrumrollUrl.current = src;
+      drumrollLoadingUrl.current = null;
       setDrumrollStatus('ready');
       console.log('Drumroll preload successful');
     } catch (error) {
       console.log('Drumroll preload failed:', error.message);
       drumrollRef.current = null;
+      drumrollLoadingUrl.current = null;
       setDrumrollStatus('error');
     }
   }, [drumrollStatus]);
@@ -151,10 +164,20 @@ const useAudio = () => {
    * @param {string|null} audioUrl - URL to preload (null uses default)
    */
   const preloadCelebration = useCallback(async (audioUrl = null) => {
-    const src = audioUrl || '/celebration.mp3';
+    // Skip if no custom URL provided (default files don't exist on API)
+    if (!audioUrl) {
+      return;
+    }
+
+    const src = audioUrl;
 
     // Skip if already preloaded with same URL
     if (preloadedCelebrationUrl.current === src && celebrationRef.current) {
+      return;
+    }
+
+    // Skip if already loading this URL (prevent concurrent duplicates)
+    if (celebrationLoadingUrl.current === src) {
       return;
     }
 
@@ -163,8 +186,8 @@ const useAudio = () => {
       return;
     }
 
-    // Mark URL immediately to prevent duplicate calls
-    preloadedCelebrationUrl.current = src;
+    // Mark as loading immediately
+    celebrationLoadingUrl.current = src;
 
     // Clean up previous
     if (celebrationRef.current) {
@@ -175,22 +198,19 @@ const useAudio = () => {
     setCelebrationStatus('loading');
 
     try {
-      // Fetch audio data directly - gives us full control, no browser retries
       const response = await fetch(src);
-
-      // Log response details for debugging
-      const contentType = response.headers.get('content-type');
-      const contentEncoding = response.headers.get('content-encoding');
-      console.log(`Celebration fetch: status=${response.status}, type=${contentType}, encoding=${contentEncoding}`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const blob = await response.blob();
-      console.log(`Celebration blob: ${blob.size} bytes, type=${blob.type}`);
+      // Validate content type
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('audio')) {
+        throw new Error(`Invalid content type: ${contentType}`);
+      }
 
-      // Validate blob has data
+      const blob = await response.blob();
       if (blob.size === 0) {
         throw new Error('Empty response');
       }
@@ -210,11 +230,13 @@ const useAudio = () => {
       });
 
       celebrationRef.current = audio;
+      preloadedCelebrationUrl.current = src;
+      celebrationLoadingUrl.current = null;
       setCelebrationStatus('ready');
-      console.log('Celebration preload successful');
     } catch (error) {
       console.log('Celebration preload failed:', error.message);
       celebrationRef.current = null;
+      celebrationLoadingUrl.current = null;
       setCelebrationStatus('error');
     }
   }, [celebrationStatus]);
