@@ -271,20 +271,27 @@ function RevealPage() {
     }
 
     try {
-      // Fetch user preferences (fast - no audio data)
-      const prefsData = await authService.getPreferences();
-      const userPrefs = { ...DEFAULT_PREFERENCES, ...prefsData.preferences };
+      // Use public status endpoint to get preferences (same as normal reveal)
+      const data = await genderService.getStatusByCode(code);
+
+      if (data.isDoctor) {
+        setError('Cannot preview a doctor link');
+        setStep('error');
+        return;
+      }
+
+      const userPrefs = { ...DEFAULT_PREFERENCES, ...(data.preferences || {}) };
 
       // Set UI immediately - audio URLs are already in preferences
       setPreferences(userPrefs);
       setGender(previewGender);
-      setIsHost(true);
+      setIsHost(data.isHost || false);
       setStep('ready');
     } catch (err) {
-      setError('Failed to load preferences. Please log in first.');
+      setError(err.message || 'Invalid or expired link');
       setStep('error');
     }
-  }, [previewGender]);
+  }, [previewGender, code]);
 
   // Initialize on mount and cleanup on unmount
   useEffect(() => {
