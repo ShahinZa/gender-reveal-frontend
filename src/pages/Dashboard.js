@@ -211,14 +211,6 @@ function Dashboard() {
             )}
           </div>
 
-          {/* Reveal Settings */}
-          <div className="mb-8">
-            <RevealSettings
-              isGenderSet={status?.isSet}
-              onPreferencesChange={handlePreferencesChange}
-            />
-          </div>
-
           {/* Code Cards */}
           <div className="grid md:grid-cols-2 gap-4 mb-8">
             {/* Secret Keeper Code */}
@@ -464,6 +456,15 @@ function Dashboard() {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Reveal Settings - Below code cards for better flow */}
+          <div className="mb-8">
+            <RevealSettings
+              isGenderSet={status?.isSet}
+              revealCode={user?.revealCode}
+              onPreferencesChange={handlePreferencesChange}
+            />
           </div>
 
           {/* Quick Action */}

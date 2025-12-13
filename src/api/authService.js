@@ -81,6 +81,19 @@ const authService = {
   },
 
   /**
+   * Get custom audio data
+   * @param {string} type - 'countdown' or 'celebration'
+   * @returns {Promise<{audioData: string, fileName: string} | null>}
+   */
+  async getAudio(type) {
+    try {
+      return await apiClient.get(`/api/auth/audio/${type}`);
+    } catch {
+      return null;
+    }
+  },
+
+  /**
    * Delete custom audio
    * @param {string} type - 'countdown' or 'celebration'
    */

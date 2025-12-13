@@ -1,19 +1,45 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
 import { io } from 'socket.io-client';
 import { genderService, authService } from '../api';
-import { useCountdown, useAudio, useHeartReactions } from '../hooks';
+import { useCountdown, useAudio, useHeartReactions, useRevealTheme } from '../hooks';
 import { Button, Card, Spinner, Alert } from '../components/common';
 import HeartReactions from '../components/HeartReactions';
 import { THEME_COLORS, INTENSITY_SETTINGS, DEFAULT_PREFERENCES } from '../constants/revealThemes';
+
+/**
+ * PreviewBadge Component - Shows preview mode indicator
+ * Single Responsibility: Display preview mode badge
+ * Note: No close button needed - users can simply close the browser tab
+ */
+const PreviewBadge = ({ isPreviewMode }) => {
+  if (!isPreviewMode) return null;
+
+  return (
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-purple-500/30 to-pink-500/30 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full border border-white/20 shadow-lg">
+      <span className="flex items-center gap-2">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+        Preview Mode
+      </span>
+    </div>
+  );
+};
 
 const SOCKET_URL = process.env.REACT_APP_API_URL || 'https://gender-production.up.railway.app';
 
 function RevealPage() {
   const { code } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Preview mode detection
+  const isPreviewMode = searchParams.get('preview') === 'true';
+  const previewGender = searchParams.get('gender');
 
   const [step, setStep] = useState('loading');
   const [error, setError] = useState('');
@@ -44,6 +70,9 @@ function RevealPage() {
     cooldownMs: 250,
     heartDuration: 2000,
   });
+
+  // Theme hook - must be called unconditionally (React hooks rule)
+  const revealTheme = useRevealTheme({ preferences, gender: gender || 'boy' });
 
   // Keep spawnHeart ref updated for WebSocket listener
   spawnHeartRef.current = spawnHeart;
@@ -222,9 +251,61 @@ function RevealPage() {
     });
   }, [code, startFallbackPolling]);
 
+  // Initialize preview mode
+  const initPreviewMode = useCallback(async () => {
+    if (!previewGender || (previewGender !== 'boy' && previewGender !== 'girl')) {
+      setError('Invalid preview gender. Use ?preview=true&gender=boy or ?preview=true&gender=girl');
+      setStep('error');
+      return;
+    }
+
+    try {
+      // Fetch user preferences
+      const prefsData = await authService.getPreferences();
+      const userPrefs = { ...DEFAULT_PREFERENCES, ...prefsData.preferences };
+
+      // Try to fetch custom audio data if available
+      try {
+        const [countdownAudio, celebrationAudio] = await Promise.all([
+          authService.getAudio('countdown'),
+          authService.getAudio('celebration'),
+        ]);
+
+        if (countdownAudio?.audioData) {
+          userPrefs.customAudio = userPrefs.customAudio || {};
+          userPrefs.customAudio.countdown = {
+            ...userPrefs.customAudio.countdown,
+            data: countdownAudio.audioData,
+          };
+        }
+        if (celebrationAudio?.audioData) {
+          userPrefs.customAudio = userPrefs.customAudio || {};
+          userPrefs.customAudio.celebration = {
+            ...userPrefs.customAudio.celebration,
+            data: celebrationAudio.audioData,
+          };
+        }
+      } catch {
+        // Audio fetch failed, continue without custom audio
+      }
+
+      setPreferences(userPrefs);
+      setGender(previewGender);
+      setIsHost(true); // In preview mode, user is always the host
+      setStep('ready');
+    } catch (err) {
+      setError('Failed to load preferences. Please log in first.');
+      setStep('error');
+    }
+  }, [previewGender]);
+
   // Initialize on mount and cleanup on unmount
   useEffect(() => {
-    checkStatus();
+    if (isPreviewMode) {
+      initPreviewMode();
+    } else {
+      checkStatus();
+    }
 
     // Handle page refresh/close - ensure socket disconnects
     const handleBeforeUnload = () => {
@@ -241,7 +322,7 @@ function RevealPage() {
       stopAudio();
       disconnectWebSocket();
     };
-  }, [code, stopAudio, disconnectWebSocket]);
+  }, [code, stopAudio, disconnectWebSocket, isPreviewMode, initPreviewMode]);
 
   const checkStatus = async () => {
     try {
@@ -334,8 +415,12 @@ function RevealPage() {
     setLoading(true);
 
     try {
-      const data = await genderService.revealGender(code);
-      setGender(data.gender);
+      // In preview mode, skip API call - gender is already set
+      if (!isPreviewMode) {
+        const data = await genderService.revealGender(code);
+        setGender(data.gender);
+      }
+
       setStep('countdown');
       if (preferences.soundEnabled) {
         const customCountdownAudio = preferences.customAudio?.countdown?.data || null;
@@ -467,11 +552,13 @@ function RevealPage() {
 
   // Ready
   if (step === 'ready') {
-    const isSynced = preferences.syncedReveal;
+    const isSynced = preferences.syncedReveal && !isPreviewMode;
     const showHostView = !isSynced || isHost;
 
     return (
       <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+        <PreviewBadge isPreviewMode={isPreviewMode} />
+
         {/* Heart reactions for synced mode */}
         <HeartReactions hearts={hearts} onSendHeart={sendHeart} enabled={isSynced} />
 
@@ -487,7 +574,7 @@ function RevealPage() {
           // Host view - can trigger the reveal
           <div className="relative z-10 text-center animate-fade-in">
             {/* Host badge for synced mode */}
-            {isSynced && isHost && (
+            {isSynced && isHost && !isPreviewMode && (
               <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-400/30 rounded-full px-3 py-1.5 mb-6">
                 <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -594,6 +681,7 @@ function RevealPage() {
   if (step === 'countdown') {
     return (
       <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
+        <PreviewBadge isPreviewMode={isPreviewMode} />
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-dark-800 to-dark-900" />
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
@@ -611,51 +699,30 @@ function RevealPage() {
 
   // Opening animation - flying balloons
   if (step === 'opening') {
-    const isBoy = gender === 'boy';
-    const theme = THEME_COLORS[preferences.theme] || THEME_COLORS.classic;
-    const intensity = INTENSITY_SETTINGS[preferences.animationIntensity] || INTENSITY_SETTINGS.medium;
-
-    // Use theme colors for balloons (pad to 5 colors if needed)
-    const themeColors = isBoy ? theme.boy : theme.girl;
-    const colors = [...themeColors];
-    while (colors.length < 5) {
-      colors.push(themeColors[colors.length % themeColors.length]);
-    }
-
-    // Generate balloon positions based on intensity
-    const balloonCount = intensity.balloonCount;
-    const balloonPositions = Array.from({ length: balloonCount }, (_, i) => ({
-      left: `${(i / balloonCount) * 100 + Math.random() * 3}%`,
-      delay: (i % 5) * 0.03 + Math.random() * 0.05,
-      size: 65 + Math.random() * 65,
-      color: i % colors.length,
-      speed: 0.9 + Math.random() * 0.5,
-      wobble: 10 + Math.random() * 15,
-      rotate: -12 + Math.random() * 24,
-    }));
-
-    const openingBg = isBoy ? theme.openingBgBoy : theme.openingBgGirl;
+    const { isBoy, colors, backgrounds, balloonPositions, particlePositions } = revealTheme;
 
     return (
-      <div className={`min-h-screen w-full fixed inset-0 overflow-hidden bg-gradient-to-b ${openingBg}`}>
+      <div className={`min-h-screen w-full fixed inset-0 overflow-hidden bg-gradient-to-b ${backgrounds.opening}`}>
+        <PreviewBadge isPreviewMode={isPreviewMode} />
+
         {/* Animated background particles */}
         <div className="absolute inset-0 overflow-hidden">
-          {[...Array(20)].map((_, i) => (
+          {particlePositions.map((pos, i) => (
             <motion.div
               key={`particle-${i}`}
               className={`absolute w-2 h-2 rounded-full ${isBoy ? 'bg-blue-200' : 'bg-pink-200'}`}
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                left: pos.left,
+                top: pos.top,
               }}
               animate={{
                 opacity: [0.2, 0.8, 0.2],
                 scale: [1, 1.5, 1],
               }}
               transition={{
-                duration: 1 + Math.random(),
+                duration: pos.duration,
                 repeat: Infinity,
-                delay: Math.random() * 0.5,
+                delay: pos.delay,
               }}
             />
           ))}
@@ -714,8 +781,8 @@ function RevealPage() {
                   <defs>
                     <radialGradient id={`grad-${i}`} cx="35%" cy="30%" r="60%">
                       <stop offset="0%" stopColor="white" stopOpacity="0.6" />
-                      <stop offset="40%" stopColor={colors[pos.color]} stopOpacity="1" />
-                      <stop offset="100%" stopColor={colors[pos.color]} stopOpacity="0.9" />
+                      <stop offset="40%" stopColor={colors[pos.colorIndex]} stopOpacity="1" />
+                      <stop offset="100%" stopColor={colors[pos.colorIndex]} stopOpacity="0.9" />
                     </radialGradient>
                     <linearGradient id={`shine-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="white" stopOpacity="0.5" />
@@ -729,11 +796,11 @@ function RevealPage() {
                   {/* Small highlight dot */}
                   <ellipse cx="24" cy="22" rx="4" ry="5" fill="white" opacity="0.7" />
                   {/* Balloon knot */}
-                  <path d="M36,74 Q40,78 44,74 L42,76 Q40,80 38,76 Z" fill={colors[pos.color]} />
+                  <path d="M36,74 Q40,78 44,74 L42,76 Q40,80 38,76 Z" fill={colors[pos.colorIndex]} />
                   {/* Curvy string */}
                   <motion.path
                     d="M40,78 Q44,88 38,98 Q34,108 40,118"
-                    stroke={colors[pos.color]}
+                    stroke={colors[pos.colorIndex]}
                     strokeWidth="1.5"
                     fill="none"
                     opacity="0.6"
@@ -788,55 +855,47 @@ function RevealPage() {
 
   // Final reveal
   if (step === 'reveal') {
-    const isBoy = gender === 'boy';
-    const theme = THEME_COLORS[preferences.theme] || THEME_COLORS.classic;
-    const bgGradient = isBoy ? theme.bgBoy : theme.bgGirl;
-    const glowClass = isBoy ? theme.glowBoy : theme.glowGirl;
-    const customMessage = preferences.customMessage || 'Congratulations!';
-
-    const isSynced = preferences.syncedReveal;
+    const { isBoy, backgrounds, displayValues } = revealTheme;
+    const isSynced = preferences.syncedReveal && !isPreviewMode;
 
     return (
-      <div className={`min-h-screen relative overflow-hidden flex items-center justify-center bg-gradient-to-br ${bgGradient}`}>
+      <div className={`min-h-screen relative overflow-hidden flex items-center justify-center bg-gradient-to-br ${backgrounds.main}`}>
+        <PreviewBadge isPreviewMode={isPreviewMode} />
+
         {/* Heart reactions for synced mode */}
         <HeartReactions hearts={hearts} onSendHeart={sendHeart} enabled={isSynced} />
 
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className={`absolute top-20 left-10 w-72 h-72 ${glowClass} rounded-full blur-3xl animate-pulse`} />
-          <div className={`absolute bottom-20 right-10 w-96 h-96 ${glowClass} rounded-full blur-3xl animate-pulse`} />
-          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[600px] h-[600px] ${glowClass} rounded-full blur-3xl`} style={{ opacity: 0.5 }} />
+          <div className={`absolute top-20 left-10 w-72 h-72 ${backgrounds.glow} rounded-full blur-3xl animate-pulse`} />
+          <div className={`absolute bottom-20 right-10 w-96 h-96 ${backgrounds.glow} rounded-full blur-3xl animate-pulse`} />
+          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[600px] h-[600px] ${backgrounds.glow} rounded-full blur-3xl`} style={{ opacity: 0.5 }} />
         </div>
 
         <div className="relative z-10 text-center">
           <p className="text-2xl md:text-3xl font-medium mb-4 animate-float-up text-white/80">
-            {preferences.babyCount === 1 ? "It's a" : `It's ${preferences.babyCount === 2 ? 'Twin' : 'Triplet'}`}
+            {displayValues.babyCount === 1 ? "It's a" : `It's ${displayValues.babyCount === 2 ? 'Twin' : 'Triplet'}`}
           </p>
 
-          <div className={`mb-6 animate-burst-in flex justify-center ${preferences.babyCount > 1 ? 'gap-2 md:gap-4' : ''}`}>
-            {Array.from({ length: preferences.babyCount || 1 }).map((_, i) => (
+          <div className={`mb-6 animate-burst-in flex justify-center ${displayValues.babyCount > 1 ? 'gap-2 md:gap-4' : ''}`}>
+            {Array.from({ length: displayValues.babyCount }).map((_, i) => (
               <span
                 key={i}
-                className={preferences.babyCount > 1 ? 'text-7xl md:text-9xl' : 'text-9xl md:text-[12rem]'}
+                className={displayValues.babyCount > 1 ? 'text-7xl md:text-9xl' : 'text-9xl md:text-[12rem]'}
                 style={{ animationDelay: `${i * 0.1}s` }}
               >
-                {isBoy ? (preferences.boyEmoji || '👦') : (preferences.girlEmoji || '👧')}
+                {displayValues.emoji}
               </span>
             ))}
           </div>
 
           <h1 className="text-6xl md:text-8xl font-bold mb-8 text-shadow-lg animate-float-up text-white"
               style={{ animationDelay: '0.2s' }}>
-            {isBoy
-              ? (preferences.babyCount === 1 ? 'BOY!' : 'BOYS!')
-              : (preferences.babyCount === 1 ? 'GIRL!' : 'GIRLS!')}
+            {displayValues.babyCount === 1 ? displayValues.genderText : displayValues.genderTextPlural}!
           </h1>
 
           {/* Celebration emojis */}
           <div className="flex justify-center gap-4 mb-8">
-            {(isBoy
-              ? ['🩵', '⭐', '🩵', '⭐', '🩵']
-              : ['🩷', '⭐', '🩷', '⭐', '🩷']
-            ).map((emoji, i) => (
+            {displayValues.celebrationEmojis.map((emoji, i) => (
               <span
                 key={i}
                 className="text-4xl md:text-5xl animate-sparkle"
@@ -849,7 +908,7 @@ function RevealPage() {
 
           <p className="text-3xl md:text-4xl font-script mb-12 animate-float-up text-white/90"
              style={{ animationDelay: '0.4s' }}>
-            {customMessage}
+            {displayValues.customMessage}
           </p>
 
           <button

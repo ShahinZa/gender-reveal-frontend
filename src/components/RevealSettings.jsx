@@ -4,7 +4,16 @@ import { authService } from '../api';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-function RevealSettings({ isGenderSet = false, onPreferencesChange }) {
+/**
+ * RevealSettings Component
+ * Single Responsibility: Manage user preferences for the reveal experience
+ *
+ * @param {Object} props
+ * @param {boolean} props.isGenderSet - Whether the gender has been set
+ * @param {string} props.revealCode - The reveal code for preview URLs
+ * @param {function} props.onPreferencesChange - Callback when preferences change
+ */
+function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }) {
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [isExpanded, setIsExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -14,6 +23,19 @@ function RevealSettings({ isGenderSet = false, onPreferencesChange }) {
   const [audioError, setAudioError] = useState({ countdown: null, celebration: null });
   const countdownInputRef = useRef(null);
   const celebrationInputRef = useRef(null);
+
+  /**
+   * Open preview in a new tab
+   * Opens the actual reveal page with preview query parameters
+   */
+  const openPreview = useCallback((gender) => {
+    if (!revealCode) {
+      console.error('No reveal code available for preview');
+      return;
+    }
+    const previewUrl = `/reveal/${revealCode}?preview=true&gender=${gender}`;
+    window.open(previewUrl, '_blank', 'noopener,noreferrer');
+  }, [revealCode]);
 
   // Fetch preferences on mount
   useEffect(() => {
@@ -125,12 +147,12 @@ function RevealSettings({ isGenderSet = false, onPreferencesChange }) {
           const base64Data = reader.result;
           await authService.uploadAudio(type, base64Data, file.name);
 
-          // Update local preferences state
+          // Update local preferences state - include data for demo preview
           setPreferences(prev => ({
             ...prev,
             customAudio: {
               ...prev.customAudio,
-              [type]: { fileName: file.name, size: file.size },
+              [type]: { fileName: file.name, size: file.size, data: base64Data },
             },
           }));
           setSaveStatus('saved');
@@ -703,6 +725,44 @@ function RevealSettings({ isGenderSet = false, onPreferencesChange }) {
                   })}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Preview Section */}
+          <div className="pt-4 border-t border-white/10">
+            <label className="block text-white/70 text-sm font-medium mb-3">
+              Preview Your Reveal
+            </label>
+            <p className="text-white/40 text-xs mb-4">
+              See how your reveal will look with current settings (opens in new tab)
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => openPreview('boy')}
+                disabled={!revealCode}
+                className="flex-1 py-3 px-4 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-2xl group-hover:scale-110 transition-transform">{preferences.boyEmoji || '👦'}</span>
+                  <span className="text-blue-300 font-medium">Preview Boy</span>
+                  <svg className="w-4 h-4 text-blue-400/60 group-hover:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </div>
+              </button>
+              <button
+                onClick={() => openPreview('girl')}
+                disabled={!revealCode}
+                className="flex-1 py-3 px-4 rounded-xl border-2 border-pink-500/30 bg-pink-500/10 hover:bg-pink-500/20 hover:border-pink-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-2xl group-hover:scale-110 transition-transform">{preferences.girlEmoji || '👧'}</span>
+                  <span className="text-pink-300 font-medium">Preview Girl</span>
+                  <svg className="w-4 h-4 text-pink-400/60 group-hover:text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </div>
+              </button>
             </div>
           </div>
         </div>
