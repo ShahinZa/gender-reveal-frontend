@@ -893,18 +893,48 @@ function RevealPage() {
             {displayValues.babyCount === 1 ? displayValues.genderText : displayValues.genderTextPlural}!
           </h1>
 
-          {/* Celebration divider - subtle heart accents */}
-          <div className="flex items-center justify-center gap-3 mb-8 animate-float-up" style={{ animationDelay: '0.3s' }}>
-            <div className={`h-px w-12 md:w-16 ${isBoy ? 'bg-gradient-to-r from-transparent to-blue-300/40' : 'bg-gradient-to-r from-transparent to-pink-300/40'}`} />
+          {/* Celebration divider - subtle heart accents with animation */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            {/* Left line - expands from center */}
+            <motion.div
+              className={`h-px ${isBoy ? 'bg-gradient-to-r from-transparent to-blue-300/50' : 'bg-gradient-to-r from-transparent to-pink-300/50'}`}
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 64, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.5, ease: 'easeOut' }}
+            />
+
+            {/* Hearts - fade in with stagger and gentle pulse */}
             {displayValues.celebrationEmojis.map((emoji, i) => (
-              <span
+              <motion.span
                 key={i}
-                className="text-2xl md:text-3xl opacity-70"
+                className="text-2xl md:text-3xl"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{
+                  opacity: 0.8,
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  opacity: { duration: 0.3, delay: 0.6 + i * 0.1 },
+                  scale: {
+                    duration: 2,
+                    delay: 0.9 + i * 0.1,
+                    repeat: Infinity,
+                    repeatType: 'reverse',
+                    ease: 'easeInOut'
+                  }
+                }}
               >
                 {emoji}
-              </span>
+              </motion.span>
             ))}
-            <div className={`h-px w-12 md:w-16 ${isBoy ? 'bg-gradient-to-l from-transparent to-blue-300/40' : 'bg-gradient-to-l from-transparent to-pink-300/40'}`} />
+
+            {/* Right line - expands from center */}
+            <motion.div
+              className={`h-px ${isBoy ? 'bg-gradient-to-l from-transparent to-blue-300/50' : 'bg-gradient-to-l from-transparent to-pink-300/50'}`}
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 64, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.5, ease: 'easeOut' }}
+            />
           </div>
 
           <p className="text-3xl md:text-4xl font-script mb-12 animate-float-up text-white/90"
