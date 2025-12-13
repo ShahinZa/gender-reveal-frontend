@@ -79,8 +79,13 @@ const useAudio = () => {
   const preloadDrumroll = useCallback((audioUrl = null) => {
     const src = audioUrl || '/drumroll.mp3';
 
-    // Skip if already preloaded with same URL
+    // Skip if already preloaded with same URL (and not in error state)
     if (preloadedDrumrollUrl.current === src && drumrollRef.current) {
+      return;
+    }
+
+    // Skip if already tried and failed with this URL
+    if (preloadedDrumrollUrl.current === src && drumrollStatus === 'error') {
       return;
     }
 
@@ -88,6 +93,7 @@ const useAudio = () => {
       // Clean up previous
       if (drumrollRef.current) {
         drumrollRef.current.pause();
+        drumrollRef.current.src = ''; // Stop any pending requests
         drumrollRef.current = null;
       }
 
@@ -97,7 +103,6 @@ const useAudio = () => {
       const audio = new Audio();
       audio.preload = 'auto';
       audio.volume = 0.8;
-      // Enable CORS for cross-origin audio (frontend and backend on different domains)
       audio.crossOrigin = 'anonymous';
 
       // Track when ready to play
@@ -105,20 +110,24 @@ const useAudio = () => {
         setDrumrollStatus('ready');
       }, { once: true });
 
-      audio.addEventListener('error', () => {
+      // On error, clean up to prevent retry loops
+      audio.addEventListener('error', (e) => {
+        console.log('Drumroll preload error:', e.target?.error?.message || 'unknown');
+        audio.src = ''; // Prevent browser retry
+        drumrollRef.current = null;
         setDrumrollStatus('error');
       }, { once: true });
 
       audio.src = src;
-      audio.load(); // Start loading immediately
+      audio.load();
 
       drumrollRef.current = audio;
       preloadedDrumrollUrl.current = src;
     } catch (error) {
-      console.log('Audio preload not supported');
+      console.log('Audio preload not supported:', error.message);
       setDrumrollStatus('error');
     }
-  }, []);
+  }, [drumrollStatus]);
 
   /**
    * Preload celebration audio for instant playback later
@@ -127,8 +136,13 @@ const useAudio = () => {
   const preloadCelebration = useCallback((audioUrl = null) => {
     const src = audioUrl || '/celebration.mp3';
 
-    // Skip if already preloaded with same URL
+    // Skip if already preloaded with same URL (and not in error state)
     if (preloadedCelebrationUrl.current === src && celebrationRef.current) {
+      return;
+    }
+
+    // Skip if already tried and failed with this URL
+    if (preloadedCelebrationUrl.current === src && celebrationStatus === 'error') {
       return;
     }
 
@@ -136,6 +150,7 @@ const useAudio = () => {
       // Clean up previous
       if (celebrationRef.current) {
         celebrationRef.current.pause();
+        celebrationRef.current.src = ''; // Stop any pending requests
         celebrationRef.current = null;
       }
 
@@ -145,7 +160,6 @@ const useAudio = () => {
       const audio = new Audio();
       audio.preload = 'auto';
       audio.volume = 0.8;
-      // Enable CORS for cross-origin audio (frontend and backend on different domains)
       audio.crossOrigin = 'anonymous';
 
       // Track when ready to play
@@ -153,20 +167,24 @@ const useAudio = () => {
         setCelebrationStatus('ready');
       }, { once: true });
 
-      audio.addEventListener('error', () => {
+      // On error, clean up to prevent retry loops
+      audio.addEventListener('error', (e) => {
+        console.log('Celebration preload error:', e.target?.error?.message || 'unknown');
+        audio.src = ''; // Prevent browser retry
+        celebrationRef.current = null;
         setCelebrationStatus('error');
       }, { once: true });
 
       audio.src = src;
-      audio.load(); // Start loading immediately
+      audio.load();
 
       celebrationRef.current = audio;
       preloadedCelebrationUrl.current = src;
     } catch (error) {
-      console.log('Audio preload not supported');
+      console.log('Audio preload not supported:', error.message);
       setCelebrationStatus('error');
     }
-  }, []);
+  }, [celebrationStatus]);
 
   /**
    * Play drumroll/countdown sound
@@ -207,16 +225,8 @@ const useAudio = () => {
       }
 
       drumrollRef.current.play().catch((err) => {
-        console.log('Audio play failed, retrying with new element:', err.message);
-        // Retry with a fresh Audio element (handles some edge cases)
-        const freshAudio = new Audio();
-        freshAudio.crossOrigin = 'anonymous';
-        freshAudio.volume = 0.8;
-        freshAudio.src = src;
-        drumrollRef.current = freshAudio;
-        freshAudio.play().catch((retryErr) => {
-          console.log('Audio retry failed:', retryErr.message);
-        });
+        console.log('Audio play failed:', err.message);
+        // Don't retry - if it failed, it failed
       });
 
       // Auto-stop after countdown duration
@@ -274,16 +284,8 @@ const useAudio = () => {
       }
 
       celebrationRef.current.play().catch((err) => {
-        console.log('Celebration play failed, retrying with new element:', err.message);
-        // Retry with a fresh Audio element (handles some edge cases)
-        const freshAudio = new Audio();
-        freshAudio.crossOrigin = 'anonymous';
-        freshAudio.volume = 0.8;
-        freshAudio.src = src;
-        celebrationRef.current = freshAudio;
-        freshAudio.play().catch((retryErr) => {
-          console.log('Celebration retry failed:', retryErr.message);
-        });
+        console.log('Celebration play failed:', err.message);
+        // Don't retry - if it failed, it failed
       });
     } catch (error) {
       console.log('Audio not supported');
