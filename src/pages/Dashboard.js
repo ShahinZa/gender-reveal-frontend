@@ -151,7 +151,13 @@ function Dashboard() {
         <div className="max-w-2xl mx-auto animate-fade-in">
           {/* Header */}
           <header className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate('/')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
+            >
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
                 {user.email.charAt(0).toUpperCase()}
               </div>
