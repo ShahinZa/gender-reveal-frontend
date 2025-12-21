@@ -30,8 +30,8 @@ const PreviewBadge = ({ isPreviewMode }) => {
   );
 };
 
-const SOCKET_URL = process.env.REACT_APP_API_URL || 'https://baby-reveal-backend-production.up.railway.app';
-const API_URL = process.env.REACT_APP_API_URL || 'https://baby-reveal-backend-production.up.railway.app';
+const SOCKET_URL = process.env.REACT_APP_API_URL || 'https://backend.babyreveal.party';
+const API_URL = process.env.REACT_APP_API_URL || 'https://backend.babyreveal.party';
 
 /**
  * Build full audio URL from relative path
