@@ -30,8 +30,8 @@ const PreviewBadge = ({ isPreviewMode }) => {
   );
 };
 
-const SOCKET_URL = process.env.REACT_APP_API_URL || 'https://hidden-simonette-baby-reveal-patry-b1dd6946.koyeb.app';
-const API_URL = process.env.REACT_APP_API_URL || 'https://hidden-simonette-baby-reveal-patry-b1dd6946.koyeb.app';
+const SOCKET_URL = process.env.REACT_APP_API_URL || 'https://baby-reveal-backend-production.up.railway.app';
+const API_URL = process.env.REACT_APP_API_URL || 'https://baby-reveal-backend-production.up.railway.app';
 
 /**
  * Build full audio URL from relative path
