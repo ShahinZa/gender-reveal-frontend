@@ -33,7 +33,7 @@ console.log(
   'font-size: 12px; color: #f59e0b; font-weight: bold;'
 );
 console.log(
-  '%cReach out: shahin@zanbaghi.com',
+  '%cReach out: privacy@babyreveal.party',
   'font-size: 12px; color: #ec4899;'
 );
 console.log(
