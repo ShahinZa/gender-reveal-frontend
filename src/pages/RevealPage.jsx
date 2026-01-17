@@ -89,12 +89,13 @@ function RevealPage() {
   spawnHeartRef.current = spawnHeart;
 
   // Memoize audio URLs to avoid object reference changes triggering duplicate preloads
+  // Use default audio if no custom audio is set
   const countdownAudioUrl = useMemo(
-    () => buildAudioUrl(preferences.customAudio?.countdown?.url),
+    () => buildAudioUrl(preferences.customAudio?.countdown?.url) || '/drumroll.mp3',
     [preferences.customAudio?.countdown?.url]
   );
   const celebrationAudioUrl = useMemo(
-    () => buildAudioUrl(preferences.customAudio?.celebration?.url),
+    () => buildAudioUrl(preferences.customAudio?.celebration?.url) || '/celebration.mp3',
     [preferences.customAudio?.celebration?.url]
   );
 
@@ -113,8 +114,7 @@ function RevealPage() {
     const colors = revealedGender === 'boy' ? theme.boy : theme.girl;
 
     if (withSound && preferences.soundEnabled) {
-      const celebrationUrl = buildAudioUrl(preferences.customAudio?.celebration?.url);
-      playCelebration(celebrationUrl);
+      playCelebration(celebrationAudioUrl);
     }
 
     confetti({
@@ -147,20 +147,19 @@ function RevealPage() {
       }
     };
     frame();
-  }, [preferences.theme, preferences.animationIntensity, preferences.soundEnabled, preferences.customAudio?.celebration?.url, playCelebration]);
+  }, [preferences.theme, preferences.animationIntensity, preferences.soundEnabled, celebrationAudioUrl, playCelebration]);
 
   // Countdown complete handler
   const onCountdownComplete = useCallback(() => {
     setStep('opening');
     if (preferences.soundEnabled) {
-      const celebrationUrl = buildAudioUrl(preferences.customAudio?.celebration?.url);
-      playCelebration(celebrationUrl);
+      playCelebration(celebrationAudioUrl);
     }
     setTimeout(() => {
       setStep('reveal');
       triggerConfetti(gender, false);
     }, 1200);
-  }, [gender, preferences.soundEnabled, preferences.customAudio?.celebration?.url, playCelebration, triggerConfetti]);
+  }, [gender, preferences.soundEnabled, celebrationAudioUrl, playCelebration, triggerConfetti]);
 
   const { count, start: startCountdown } = useCountdown(5, onCountdownComplete);
 
@@ -179,8 +178,7 @@ function RevealPage() {
       setGender(revealedGender);
       setStep('countdown');
       if (preferences.soundEnabled) {
-        const countdownUrl = buildAudioUrl(preferences.customAudio?.countdown?.url);
-        playDrumroll(countdownUrl, countdownDuration - elapsed);
+        playDrumroll(countdownAudioUrl, countdownDuration - elapsed);
       }
       startCountdown(Math.ceil(countdownDuration - elapsed));
     } else if (elapsed < countdownDuration + 2) {
@@ -188,8 +186,7 @@ function RevealPage() {
       setGender(revealedGender);
       setStep('opening');
       if (preferences.soundEnabled) {
-        const celebrationUrl = buildAudioUrl(preferences.customAudio?.celebration?.url);
-        playCelebration(celebrationUrl);
+        playCelebration(celebrationAudioUrl);
       }
       setTimeout(() => {
         setStep('reveal');
@@ -201,7 +198,7 @@ function RevealPage() {
       setStep('reveal');
       triggerConfetti(revealedGender);
     }
-  }, [preferences, playDrumroll, playCelebration, startCountdown, triggerConfetti]);
+  }, [preferences, countdownAudioUrl, celebrationAudioUrl, playDrumroll, playCelebration, startCountdown, triggerConfetti]);
 
   // Keep ref updated so socket listener always uses latest preferences
   handleRevealStartedRef.current = handleRevealStarted;
@@ -446,8 +443,7 @@ function RevealPage() {
 
       setStep('countdown');
       if (preferences.soundEnabled) {
-        const countdownUrl = buildAudioUrl(preferences.customAudio?.countdown?.url);
-        playDrumroll(countdownUrl, preferences.countdownDuration);
+        playDrumroll(countdownAudioUrl, preferences.countdownDuration);
       }
       startCountdown(preferences.countdownDuration);
     } catch (err) {
