@@ -17,7 +17,7 @@ function Home() {
   const demoActiveRef = useRef(false);
   const openingTimeoutRef = useRef(null);
 
-  const { playDrumroll, playCelebration, stopAudio } = useAudio();
+  const { unlockAudio, playDrumroll, playCelebration, stopAudio } = useAudio();
 
   const onDemoCountdownComplete = useCallback(() => {
     // Check if demo is still active before proceeding
@@ -40,7 +40,7 @@ function Home() {
       : ['#f9a8d4', '#f472b6', '#ec4899', '#db2777'];
 
     if (withSound) {
-      playCelebration();
+      playCelebration('/celebration.mp3');
     }
 
     confetti({
@@ -76,11 +76,13 @@ function Home() {
   };
 
   const startDemo = (gender) => {
+    // Unlock audio on user gesture (required for mobile browsers)
+    unlockAudio();
     demoActiveRef.current = true;
     setDemoGender(gender);
     setDemoActive(true);
     setDemoStep('countdown');
-    playDrumroll();
+    playDrumroll('/drumroll.mp3', 5);
     startCountdown();
   };
 
