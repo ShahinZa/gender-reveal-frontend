@@ -10,6 +10,27 @@ const preloadState = {
   celebration: { url: null, targetUrl: null, done: false },
 };
 
+/**
+ * Get auth token for API requests
+ */
+const getAuthToken = () => localStorage.getItem('token');
+
+/**
+ * Fetch audio with auth header for API URLs
+ * Custom audio from /api/audio/{code}/{type} requires auth token
+ */
+const fetchAudio = async (url) => {
+  const isApiUrl = url.includes('/api/');
+  const token = getAuthToken();
+
+  const headers = {};
+  if (isApiUrl && token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return fetch(url, { headers });
+};
+
 const useAudio = () => {
   const drumrollRef = useRef(null);
   const celebrationRef = useRef(null);
@@ -64,7 +85,7 @@ const useAudio = () => {
     setDrumrollStatus('loading');
 
     try {
-      const response = await fetch(audioUrl);
+      const response = await fetchAudio(audioUrl);
       console.log('Drumroll response:', response.status, response.headers.get('content-type'));
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -131,7 +152,7 @@ const useAudio = () => {
     setCelebrationStatus('loading');
 
     try {
-      const response = await fetch(audioUrl);
+      const response = await fetchAudio(audioUrl);
       console.log('Celebration response:', response.status, response.headers.get('content-type'));
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
