@@ -4,10 +4,10 @@ import { useRef, useCallback, useState } from 'react';
 let audioContext = null;
 let audioUnlocked = false;
 
-// Global preload tracking - prevents ALL duplicate calls
+// Global preload tracking - tracks current target URL and completion
 const preloadState = {
-  drumroll: { url: null, done: false },
-  celebration: { url: null, done: false },
+  drumroll: { url: null, targetUrl: null, done: false },
+  celebration: { url: null, targetUrl: null, done: false },
 };
 
 const useAudio = () => {
@@ -50,14 +50,15 @@ const useAudio = () => {
   const preloadDrumroll = useCallback(async (audioUrl) => {
     if (!audioUrl) return;
 
-    // Global duplicate check - once done for a URL, never retry
+    // If this exact URL is already loaded successfully, skip
     if (preloadState.drumroll.done && preloadState.drumroll.url === audioUrl) {
+      console.log('Drumroll already loaded for URL:', audioUrl);
       return;
     }
 
-    // Mark as done IMMEDIATELY to prevent any concurrent calls
-    preloadState.drumroll.url = audioUrl;
-    preloadState.drumroll.done = true;
+    // Update target URL - this is what we WANT to have loaded
+    // If a different URL was loading, this new URL takes priority
+    preloadState.drumroll.targetUrl = audioUrl;
 
     console.log('Preloading drumroll:', audioUrl);
     setDrumrollStatus('loading');
@@ -75,6 +76,12 @@ const useAudio = () => {
       const blob = await response.blob();
       if (blob.size === 0) throw new Error('Empty response');
 
+      // Check if this URL is still the target (not superseded by a newer request)
+      if (preloadState.drumroll.targetUrl !== audioUrl) {
+        console.log('Drumroll preload superseded by newer request, discarding:', audioUrl);
+        return;
+      }
+
       const blobUrl = URL.createObjectURL(blob);
       const audio = new Audio();
       audio.volume = 0.8;
@@ -86,25 +93,39 @@ const useAudio = () => {
         audio.load();
       });
 
+      // Double-check target URL hasn't changed during audio load
+      if (preloadState.drumroll.targetUrl !== audioUrl) {
+        console.log('Drumroll preload superseded during load, discarding:', audioUrl);
+        URL.revokeObjectURL(blobUrl);
+        return;
+      }
+
       drumrollRef.current = audio;
+      preloadState.drumroll.url = audioUrl;
+      preloadState.drumroll.done = true;
       setDrumrollStatus('ready');
+      console.log('Drumroll preload complete:', audioUrl);
     } catch (error) {
       console.log('Drumroll preload failed:', error.message);
-      setDrumrollStatus('error');
+      // Only set error if this is still the target URL
+      if (preloadState.drumroll.targetUrl === audioUrl) {
+        setDrumrollStatus('error');
+      }
     }
   }, []);
 
   const preloadCelebration = useCallback(async (audioUrl) => {
     if (!audioUrl) return;
 
-    // Global duplicate check - once done for a URL, never retry
+    // If this exact URL is already loaded successfully, skip
     if (preloadState.celebration.done && preloadState.celebration.url === audioUrl) {
+      console.log('Celebration already loaded for URL:', audioUrl);
       return;
     }
 
-    // Mark as done IMMEDIATELY to prevent any concurrent calls
-    preloadState.celebration.url = audioUrl;
-    preloadState.celebration.done = true;
+    // Update target URL - this is what we WANT to have loaded
+    // If a different URL was loading, this new URL takes priority
+    preloadState.celebration.targetUrl = audioUrl;
 
     console.log('Preloading celebration:', audioUrl);
     setCelebrationStatus('loading');
@@ -122,6 +143,12 @@ const useAudio = () => {
       const blob = await response.blob();
       if (blob.size === 0) throw new Error('Empty response');
 
+      // Check if this URL is still the target (not superseded by a newer request)
+      if (preloadState.celebration.targetUrl !== audioUrl) {
+        console.log('Celebration preload superseded by newer request, discarding:', audioUrl);
+        return;
+      }
+
       const blobUrl = URL.createObjectURL(blob);
       const audio = new Audio();
       audio.volume = 0.8;
@@ -133,11 +160,24 @@ const useAudio = () => {
         audio.load();
       });
 
+      // Double-check target URL hasn't changed during audio load
+      if (preloadState.celebration.targetUrl !== audioUrl) {
+        console.log('Celebration preload superseded during load, discarding:', audioUrl);
+        URL.revokeObjectURL(blobUrl);
+        return;
+      }
+
       celebrationRef.current = audio;
+      preloadState.celebration.url = audioUrl;
+      preloadState.celebration.done = true;
       setCelebrationStatus('ready');
+      console.log('Celebration preload complete:', audioUrl);
     } catch (error) {
       console.log('Celebration preload failed:', error.message);
-      setCelebrationStatus('error');
+      // Only set error if this is still the target URL
+      if (preloadState.celebration.targetUrl === audioUrl) {
+        setCelebrationStatus('error');
+      }
     }
   }, []);
 
