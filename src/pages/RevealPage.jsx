@@ -30,8 +30,8 @@ const PreviewBadge = ({ isPreviewMode }) => {
   );
 };
 
-const SOCKET_URL = process.env.REACT_APP_API_URL || 'https://backend.babyreveal.party';
-const API_URL = process.env.REACT_APP_API_URL || 'https://backend.babyreveal.party';
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://backend.babyreveal.party';
+const API_URL = import.meta.env.VITE_API_URL || 'https://backend.babyreveal.party';
 
 /**
  * Build full audio URL from relative path
