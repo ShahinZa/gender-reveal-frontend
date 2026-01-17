@@ -13,13 +13,14 @@
   html {
     scroll-behavior: smooth;
     background-color: #0f172a;
-    overflow-x: hidden;
   }
 
   body {
-    @apply font-sans bg-gradient-to-br from-dark-800 via-dark-700 to-dark-600 min-h-screen text-white overflow-x-hidden;
+    @apply font-sans bg-gradient-to-br from-dark-800 via-dark-700 to-dark-600 min-h-screen text-white;
     background-color: #0f172a;
-    overscroll-behavior-y: contain;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: none;
   }
 
   button {
