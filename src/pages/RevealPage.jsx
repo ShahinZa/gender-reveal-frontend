@@ -286,21 +286,32 @@ function RevealPage() {
     }
 
     try {
-      // Use public status endpoint to get preferences (same as normal reveal)
-      const data = await genderService.getStatusByCode(code);
+      // First check if this is a valid reveal code
+      const statusData = await genderService.getStatusByCode(code);
 
-      if (data.isDoctor) {
+      if (statusData.isDoctor) {
         setError('Cannot preview a doctor link');
         setStep('error');
         return;
       }
 
-      const userPrefs = { ...DEFAULT_PREFERENCES, ...(data.preferences || {}) };
+      // Try to get full preferences from authenticated endpoint (includes custom audio URLs)
+      // Fall back to public status preferences if not authenticated
+      let userPrefs = { ...DEFAULT_PREFERENCES, ...(statusData.preferences || {}) };
+
+      try {
+        const authPrefs = await authService.getPreferences();
+        if (authPrefs.preferences) {
+          userPrefs = { ...DEFAULT_PREFERENCES, ...authPrefs.preferences };
+        }
+      } catch {
+        // Not authenticated or error - use public preferences (already set above)
+      }
 
       // Set UI immediately - audio URLs are already in preferences
       setPreferences(userPrefs);
       setGender(previewGender);
-      setIsHost(data.isHost || false);
+      setIsHost(statusData.isHost || false);
       // Show sound gate if sound is enabled and audio not unlocked
       const needsSoundGate = userPrefs.soundEnabled && !isAudioUnlocked;
       setStep(needsSoundGate ? 'sound-gate' : 'ready');
