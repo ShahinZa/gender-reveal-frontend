@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
 import RevealSettings from '../components/RevealSettings';
 import authService from '../api/authService';
+import Footer from '../components/Footer';
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -595,6 +596,8 @@ function Dashboard() {
           </div>
         </div>
       )}
+
+      <Footer />
     </div>
   );
 }

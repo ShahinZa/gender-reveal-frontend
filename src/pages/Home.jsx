@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
 import { useCountdown, useAudio } from '../hooks';
 import { BoyGirlIcon } from '../components/GenderIcons';
+import Footer from '../components/Footer';
 
 function Home() {
   const navigate = useNavigate();
@@ -392,32 +393,7 @@ function Home() {
         </div>
 
         {/* Footer */}
-        <footer className="px-6 py-8 border-t border-white/5">
-          <div className="max-w-2xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="text-white/25 text-xs">Made with ❤️ in Canada</span>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/about')}
-                className="text-white/25 hover:text-white/50 text-xs transition-colors"
-              >
-                About Us
-              </button>
-              <button
-                onClick={() => navigate('/privacy')}
-                className="text-white/25 hover:text-white/50 text-xs transition-colors"
-              >
-                Privacy
-              </button>
-              <button
-                onClick={() => navigate('/disclaimer')}
-                className="text-white/25 hover:text-white/50 text-xs transition-colors"
-              >
-                Terms
-              </button>
-            </div>
-            <span className="text-white/25 text-xs">&copy; {new Date().getFullYear()} babyreveal.party</span>
-          </div>
-        </footer>
+        <Footer />
       </div>
 
       {/* Demo Overlay */}
