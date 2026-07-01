@@ -881,7 +881,7 @@ function RevealPage() {
             </h1>
 
             <p className="text-white/60 text-lg mb-8">
-              The big moment is coming! Stay on this page — the reveal will start automatically.
+              The big moment is coming! Stay on this page, the reveal will start automatically.
             </p>
 
             {viewerCount > 1 && (

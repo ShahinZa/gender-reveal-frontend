@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { THEME_COLORS, INTENSITY_SETTINGS, COUNTDOWN_OPTIONS, BABY_COUNT_OPTIONS, EMOJI_OPTIONS, SKIN_TONES, applySkintone, DEFAULT_PREFERENCES } from '../constants/revealThemes';
 import { authService } from '../api';
 
@@ -13,7 +13,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
  * @param {string} props.revealCode - The reveal code for preview URLs
  * @param {function} props.onPreferencesChange - Callback when preferences change
  */
-function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }) {
+const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }, ref) {
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [isExpanded, setIsExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -86,6 +86,11 @@ function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }
       return newPrefs;
     });
   }, [savePreferences]);
+
+  // Let the parent (Dashboard reveal card) drive the synced-reveal toggle through this same source of truth
+  useImperativeHandle(ref, () => ({
+    setSyncedReveal: (value) => handleChange('syncedReveal', value),
+  }), [handleChange]);
 
   // Handle skin tone change - also update emojis with new skin tone
   const handleSkinToneChange = useCallback((newSkinTone) => {
@@ -241,8 +246,8 @@ function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }
             </svg>
           </div>
           <div className="text-left">
-            <h3 className="text-white font-semibold">Customize Your Reveal</h3>
-            <p className="text-white/50 text-sm">Theme, countdown, animations & more</p>
+            <h3 className="text-white font-semibold">Customize The Big Reveal</h3>
+            <p className="text-white/50 text-sm">Choose the theme, countdown, and animations your guests will see.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -769,6 +774,6 @@ function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }
       )}
     </div>
   );
-}
+});
 
 export default RevealSettings;

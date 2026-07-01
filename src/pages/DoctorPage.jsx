@@ -133,8 +133,8 @@ function DoctorPage() {
         <div className="relative z-10 w-full max-w-lg text-center">
           {/* Header */}
           <div className="mb-10">
-            <p className="text-white/50 text-sm mb-2">You're the secret keeper</p>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">Tap the gender</h1>
+            <p className="text-white/50 text-sm mb-2">You're the Secret Keeper</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">Tap the gender you know</h1>
             {babyCount > 1 && (
               <p className="text-purple-400 text-sm mb-2">
                 {babyCount === 2 ? '👶👶 Twins' : '👶👶👶 Triplets'}
@@ -142,7 +142,7 @@ function DoctorPage() {
             )}
             {userInfo?.userEmail && (
               <p className="text-white/40 text-sm">
-                For {userInfo.userEmail}
+                For {userInfo.userEmail}'s reveal
               </p>
             )}
           </div>
@@ -177,8 +177,8 @@ function DoctorPage() {
           </div>
 
           {/* Note */}
-          <p className="text-white/40 text-sm">
-            It stays hidden until the reveal
+          <p className="text-white/40 text-sm max-w-xs mx-auto leading-relaxed">
+            Tap once to lock it in. They won't see your choice, it stays secret until the reveal.
           </p>
         </div>
       </div>
