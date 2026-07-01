@@ -219,10 +219,40 @@ function Dashboard() {
           {/* Next-step guidance card */}
           {status?.isRevealed ? (
             <div className="bg-gradient-to-br from-pink-500/15 to-purple-500/15 backdrop-blur-xl rounded-2xl border border-pink-400/25 p-6 mb-8 text-center">
-              <div className="text-4xl mb-2">🎉</div>
-              <h2 className="text-white font-bold text-xl mb-2">You&apos;ve revealed!</h2>
-              <p className="text-white/60 text-sm">
-                Hope it was magical. Your reveal data is automatically deleted 60 days after the reveal date for your privacy.
+              <div className="text-4xl mb-3">🎉</div>
+              <h2 className="text-white font-bold text-xl md:text-2xl mb-1.5">You&apos;ve revealed!</h2>
+              <p className="text-white/65 text-sm mb-5">
+                Hope it was absolutely magical. Congratulations!
+              </p>
+
+              {/* Missed someone? compact share */}
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <button
+                  onClick={() => copyLink('reveal')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-slate-900 text-sm font-semibold hover:bg-white/90 transition-all"
+                >
+                  {copied === 'reveal' ? (
+                    <>
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                      Share reveal link
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowQR('reveal')}
+                  className="p-2.5 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+                  title="Show QR code"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                </button>
+              </div>
+              <p className="text-white/45 text-xs max-w-xs mx-auto leading-relaxed">
+                Missed someone? Your reveal link stays live for 60 days, then all data is deleted for your privacy.
               </p>
             </div>
           ) : status?.isSet ? (
