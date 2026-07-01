@@ -64,7 +64,7 @@ function AuthPage() {
 
       {/* Main Card */}
       <div className="relative z-10 w-full max-w-md">
-        <Card className="p-8">
+        <Card className="!p-6">
           {/* Back Button */}
           <button
             className="absolute top-6 left-6 text-white/60 hover:text-white transition-colors flex items-center gap-2 text-sm"
@@ -77,19 +77,19 @@ function AuthPage() {
           </button>
 
           {/* Title */}
-          <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-2 mt-8">
+          <h1 className="text-2xl font-bold text-white text-center mb-1 mt-9">
             {mode === 'register' ? 'Create Account' : 'Welcome Back'}
           </h1>
 
           {/* Subtitle */}
-          <p className="text-white/60 text-center mb-8">
+          <p className="text-white/55 text-sm text-center mb-5">
             {mode === 'register'
               ? 'Start your gender reveal journey'
               : 'Sign in to your account'}
           </p>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit}>
             <Input
               type="email"
               label="Email"
@@ -98,6 +98,7 @@ function AuthPage() {
               placeholder="your@email.com"
               required
               autoFocus
+              autoComplete="email"
             />
 
             <Input
@@ -108,16 +109,24 @@ function AuthPage() {
               placeholder="••••••••"
               required
               minLength={6}
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              hint={mode === 'register' ? 'Use at least 6 characters.' : undefined}
             />
 
             {mode === 'register' && (
               <Input
                 type="password"
-                label="Confirm Password"
+                label="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                autoComplete="new-password"
+                error={
+                  confirmPassword.length > 0 && confirmPassword !== password
+                    ? 'Passwords do not match.'
+                    : undefined
+                }
               />
             )}
 
@@ -126,7 +135,7 @@ function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-6 bg-white text-slate-900 font-semibold py-4 px-8 rounded-full hover:bg-white/90 transition-all duration-200 shadow-lg shadow-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-2 bg-white text-slate-900 font-semibold py-3.5 px-8 rounded-xl hover:bg-white/90 transition-all duration-200 shadow-lg shadow-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="inline-flex items-center gap-2">
@@ -141,10 +150,8 @@ function AuthPage() {
 
           {/* Privacy Note - only show on register */}
           {mode === 'register' && (
-            <p className="text-white/30 text-[11px] text-center mt-5">
-              We only use your email for login. Nothing else.
-              <br />
-              Password recovery is not supported.
+            <p className="text-white/30 text-[11px] text-center mt-3.5 leading-relaxed">
+              We only use your email to sign in. Password recovery is not supported.
               <br />
               By signing up, you agree to our{' '}
               <span
@@ -164,7 +171,7 @@ function AuthPage() {
           )}
 
           {/* Toggle Mode */}
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
             <p className="text-white/50 text-sm">
               {mode === 'register'
                 ? 'Already have an account?'

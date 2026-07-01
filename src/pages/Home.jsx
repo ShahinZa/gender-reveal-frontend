@@ -324,37 +324,58 @@ function Home() {
 
             {/* How it works */}
             <div className="mb-16">
-              <p className="text-white/40 text-xs uppercase tracking-widest text-center mb-8">
+              <p className="text-white/40 text-xs uppercase tracking-widest text-center mb-10">
                 How it works
               </p>
-              <div className="grid md:grid-cols-3 gap-8 text-left">
-                <div className="space-y-3">
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
-                    1
-                  </div>
-                  <h3 className="text-white font-medium">Sign up</h3>
-                <p className="text-white/50 text-sm leading-relaxed">
-                  Create an account and get two links.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
-                  2
-                </div>
-                <h3 className="text-white font-medium">Someone picks</h3>
-                <p className="text-white/50 text-sm leading-relaxed">
-                  Send a link or hand your phone to whoever knows the gender. They tap Boy or Girl.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/80 font-medium text-sm">
-                  3
-                </div>
-                <h3 className="text-white font-medium">Reveal together</h3>
-                <p className="text-white/50 text-sm leading-relaxed">
-                  Open your Reveal link at the party. Find out together!
-                </p>
-              </div>
+              <div className="flex flex-col md:flex-row md:items-start md:justify-center gap-10 md:gap-0 max-w-4xl mx-auto">
+                {[
+                  {
+                    badge: 'from-pink-500/25 to-pink-500/5 border-pink-400/30',
+                    icon: 'text-pink-300',
+                    glow: 'bg-pink-500/25',
+                    line: 'from-pink-400/50 to-purple-400/40',
+                    path: 'M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244',
+                    title: 'Sign up',
+                    desc: 'Create an account and get your two private links.',
+                  },
+                  {
+                    badge: 'from-purple-500/25 to-purple-500/5 border-purple-400/30',
+                    icon: 'text-purple-200',
+                    glow: 'bg-purple-500/25',
+                    line: 'from-purple-400/50 to-emerald-400/40',
+                    path: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z',
+                    title: 'Someone picks',
+                    desc: 'Send a link or hand your phone to whoever knows. They tap Boy or Girl, and it stays secret.',
+                  },
+                  {
+                    badge: 'from-emerald-500/25 to-emerald-500/5 border-emerald-400/30',
+                    icon: 'text-emerald-300',
+                    glow: 'bg-emerald-500/25',
+                    line: '',
+                    path: 'M12 8v13m0-13V6a2 2 0 112-2h.01L12 8zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7',
+                    title: 'Reveal together',
+                    desc: 'Open your Reveal link at the party and find out together!',
+                  },
+                ].map((s, i, arr) => (
+                  <React.Fragment key={i}>
+                    <div className="flex-1 flex flex-col items-center text-center px-4">
+                      <div className="relative mb-5">
+                        <div className={`absolute inset-0 rounded-2xl ${s.glow} blur-lg opacity-70`} />
+                        <div className={`relative w-16 h-16 rounded-2xl bg-gradient-to-br ${s.badge} border flex items-center justify-center`}>
+                          <svg className={`w-7 h-7 ${s.icon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={s.path} />
+                          </svg>
+                        </div>
+                      </div>
+                      <span className="text-white/30 text-[11px] font-bold uppercase tracking-widest mb-2">Step {i + 1}</span>
+                      <h3 className="text-white font-semibold text-lg mb-1.5">{s.title}</h3>
+                      <p className="text-white/50 text-sm leading-relaxed max-w-[15rem]">{s.desc}</p>
+                    </div>
+                    {i < arr.length - 1 && (
+                      <div className={`hidden md:block flex-shrink-0 w-16 h-px mt-8 bg-gradient-to-r ${s.line}`} />
+                    )}
+                  </React.Fragment>
+                ))}
               </div>
             </div>
 
@@ -385,9 +406,12 @@ function Home() {
               <p className="text-center text-white/40 text-sm mb-2">
                 Customize themes, emojis, sounds & more after signup
               </p>
-              <p className="text-center text-white/30 text-xs">
-                Supports twins & triplets
-              </p>
+              <div className="flex justify-center">
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/40 text-xs">
+                  Twins & triplets
+                  <span className="text-amber-300/80 font-semibold uppercase tracking-wide text-[10px]">Coming soon</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
