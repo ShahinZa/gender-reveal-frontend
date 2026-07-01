@@ -415,7 +415,7 @@ function Home() {
                 Terms
               </button>
             </div>
-            <span className="text-white/25 text-xs">&copy; 2025 babyreveal.party</span>
+            <span className="text-white/25 text-xs">&copy; {new Date().getFullYear()} babyreveal.party</span>
           </div>
         </footer>
       </div>
