@@ -829,18 +829,29 @@ function RevealPage() {
               </div>
             )}
 
-            <div className="text-8xl md:text-9xl mb-12 animate-float">🎁</div>
+            <div className="relative mb-12 flex items-center justify-center">
+              <div className="absolute w-44 h-44 rounded-full bg-amber-400/25 blur-3xl animate-pulse" />
+              <div className="relative text-8xl md:text-9xl animate-float drop-shadow-[0_0_25px_rgba(251,191,36,0.4)]">🎁</div>
+            </div>
 
             <button
-              className="group relative bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 font-bold py-6 px-12 rounded-full text-2xl hover:shadow-2xl hover:shadow-amber-400/40 transition-all duration-300 hover:scale-105 disabled:opacity-50"
+              className="group relative overflow-hidden bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 font-bold py-6 px-14 rounded-full text-2xl shadow-xl shadow-amber-400/30 hover:shadow-2xl hover:shadow-amber-400/50 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
               onClick={startReveal}
               disabled={loading}
             >
-              {loading ? (
-                <span className="inline-block w-8 h-8 border-4 border-amber-950/30 border-t-amber-950 rounded-full animate-spin" />
-              ) : (
-                'Reveal Now'
-              )}
+              <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+              <span className="relative flex items-center justify-center gap-2.5">
+                {loading ? (
+                  <span className="inline-block w-8 h-8 border-4 border-amber-950/30 border-t-amber-950 rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                    </svg>
+                    Reveal Now
+                  </>
+                )}
+              </span>
             </button>
 
             {/* Audio preload status indicator - subtle, non-blocking */}
@@ -864,7 +875,7 @@ function RevealPage() {
             <p className="text-white/50 text-sm mt-8">
               {isSynced
                 ? 'Everyone watching will see the reveal at the same time'
-                : 'Get ready for the moment you\'ve been waiting for'}
+                : 'Gather everyone close, then tap the button when you are ready'}
             </p>
           </div>
         ) : (
