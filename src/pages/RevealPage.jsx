@@ -1223,24 +1223,19 @@ function RevealPage() {
               );
             })}
 
-            {/* Emoji container */}
-            <div className={`animate-burst-in flex justify-center ${displayValues.babyCount > 1 ? 'gap-2 md:gap-4' : ''}`}>
+            {/* Emoji container - CSS burst animation runs on the compositor,
+                so the emoji pops in instantly even while confetti keeps the
+                main thread busy (a JS spring here appeared seconds late on
+                slower phones) */}
+            <div className={`flex justify-center ${displayValues.babyCount > 1 ? 'gap-2 md:gap-4' : ''}`}>
               {Array.from({ length: displayValues.babyCount }).map((_, i) => (
-                <motion.span
+                <span
                   key={i}
-                  className={displayValues.babyCount > 1 ? 'text-7xl md:text-9xl' : 'text-9xl md:text-[12rem]'}
-                  initial={{ scale: 0, rotate: -10 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{
-                    duration: 0.6,
-                    delay: 0.1 + i * 0.1,
-                    type: 'spring',
-                    stiffness: 200,
-                    damping: 12,
-                  }}
+                  className={`animate-burst-in inline-block ${displayValues.babyCount > 1 ? 'text-7xl md:text-9xl' : 'text-9xl md:text-[12rem]'}`}
+                  style={{ animationDelay: `${i * 0.1}s`, animationFillMode: 'both' }}
                 >
                   {displayValues.emoji}
-                </motion.span>
+                </span>
               ))}
             </div>
           </div>
