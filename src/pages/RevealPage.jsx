@@ -814,8 +814,8 @@ function RevealPage() {
               </div>
             )}
 
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 text-shadow-lg">Ready?</h1>
-            <p className="text-white/70 text-xl mb-8">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-3 sm:mb-4 text-shadow-lg">Ready?</h1>
+            <p className="text-white/70 text-lg sm:text-xl mb-6 sm:mb-8">
               The moment you've been waiting for...
             </p>
 
@@ -835,9 +835,9 @@ function RevealPage() {
               </div>
             )}
 
-            <div className="relative mb-12 flex items-center justify-center">
-              <div className="absolute w-44 h-44 rounded-full bg-amber-400/25 blur-3xl animate-pulse" />
-              <div className="relative text-8xl md:text-9xl animate-float drop-shadow-[0_0_25px_rgba(251,191,36,0.4)]">🎁</div>
+            <div className="relative mb-8 sm:mb-12 flex items-center justify-center">
+              <div className="absolute w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-amber-400/25 blur-3xl animate-pulse" />
+              <div className="relative text-7xl sm:text-8xl md:text-9xl animate-float drop-shadow-[0_0_25px_rgba(251,191,36,0.4)]">🎁</div>
             </div>
 
             <button
@@ -878,7 +878,7 @@ function RevealPage() {
               </div>
             )}
 
-            <p className="text-white/50 text-sm mt-8">
+            <p className="text-white/50 text-sm mt-6 sm:mt-8 max-w-xs sm:max-w-none mx-auto">
               {isSynced
                 ? 'Everyone watching will see the reveal at the same time'
                 : 'Gather everyone close, then tap the button when you are ready'}
