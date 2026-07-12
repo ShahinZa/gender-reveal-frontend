@@ -61,9 +61,11 @@ const useRevealTheme = ({ preferences, gender }) => {
     babyCount: preferences?.babyCount || 1,
     genderText: isBoy ? 'BOY' : 'GIRL',
     genderTextPlural: isBoy ? 'BOYS' : 'GIRLS',
+    // 💙/💗 rather than 🩵/🩷: the light heart emojis are Unicode 15 and
+    // render as tofu boxes on iOS 15 and older Android
     celebrationEmojis: isBoy
-      ? ['🩵', '🩵', '🩵']
-      : ['🩷', '🩷', '🩷'],
+      ? ['💙', '💙', '💙']
+      : ['💗', '💗', '💗'],
   }), [isBoy, preferences?.boyEmoji, preferences?.girlEmoji, preferences?.customMessage, preferences?.babyCount]);
 
   return {

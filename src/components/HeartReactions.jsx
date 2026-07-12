@@ -75,7 +75,7 @@ const HeartButton = ({ onPress }) => {
   }, [onPress]);
 
   return (
-    <div className="fixed bottom-8 right-8 z-40">
+    <div className="fixed right-8 z-40" style={{ bottom: 'max(2rem, calc(env(safe-area-inset-bottom) + 0.75rem))' }}>
       {/* Ripple effects */}
       <AnimatePresence>
         {ripples.map(id => (
@@ -99,7 +99,7 @@ const HeartButton = ({ onPress }) => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-        className="relative w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center shadow-lg shadow-black/10 overflow-hidden group"
+        className="relative w-14 h-14 bg-white/15 sm:bg-white/10 sm:backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center shadow-lg shadow-black/10 overflow-hidden group"
         aria-label="Send heart reaction"
       >
         {/* Glow effect on hover */}

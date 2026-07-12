@@ -77,6 +77,11 @@ function RevealPage() {
   const pollingRef = useRef(null); // Fallback polling
   const spawnHeartRef = useRef(null); // Ref to hold latest spawnHeart function
   const handleRevealStartedRef = useRef(null); // Ref to hold latest handler
+  const stepRef = useRef('loading'); // Latest step for timer/socket callbacks
+  const cannonsRef = useRef(null); // Active confetti side-cannon interval
+  const openingTimeoutRef = useRef(null); // opening -> reveal transition timer
+  const checkingStatusRef = useRef(false); // checkStatus re-entrancy guard
+  const wakeLockRef = useRef(null); // Screen wake lock while waiting/counting
 
   const { unlockAudio, isAudioUnlocked, primeAudioPlayback, preloadDrumroll, preloadCelebration, playDrumroll, playCelebration, stopAudio, audioStatus } = useAudio();
 
@@ -134,10 +139,17 @@ function RevealPage() {
 
     // Side cannons fire on a fixed interval, not every animation frame —
     // per-frame confetti() calls overwhelm low-end phone CPUs/GPUs.
+    // Restart instead of stacking: rapid "More Confetti!" taps would
+    // otherwise accumulate intervals until the page freezes.
+    if (cannonsRef.current) {
+      clearInterval(cannonsRef.current);
+      cannonsRef.current = null;
+    }
     const end = Date.now() + intensity.sideCannonDuration;
     const cannons = setInterval(() => {
       if (Date.now() >= end) {
         clearInterval(cannons);
+        if (cannonsRef.current === cannons) cannonsRef.current = null;
         return;
       }
       confetti({
@@ -159,6 +171,7 @@ function RevealPage() {
         colors
       });
     }, intensity.sideCannonInterval);
+    cannonsRef.current = cannons;
   }, [preferences.theme, preferences.animationIntensity, preferences.soundEnabled, celebrationAudioUrl, playCelebration]);
 
   // Countdown complete handler
@@ -167,7 +180,7 @@ function RevealPage() {
     if (preferences.soundEnabled) {
       playCelebration(celebrationAudioUrl);
     }
-    setTimeout(() => {
+    openingTimeoutRef.current = setTimeout(() => {
       setStep('reveal');
       triggerConfetti(gender, false);
     }, 1200);
@@ -177,6 +190,12 @@ function RevealPage() {
 
   // Handle reveal started event (from WebSocket or polling)
   const handleRevealStarted = useCallback((data) => {
+    // The reveal is already running locally (e.g. the host receiving their
+    // own broadcast, or a socket event racing the fallback poll) - a second
+    // trigger would reset the countdown and restart the audio
+    if (['countdown', 'opening', 'reveal'].includes(stepRef.current)) {
+      return;
+    }
     const { gender: revealedGender, revealStartedAt, serverTime } = data;
     const countdownDuration = preferences?.countdownDuration || 5;
 
@@ -212,8 +231,9 @@ function RevealPage() {
     }
   }, [preferences, countdownAudioUrl, celebrationAudioUrl, playDrumroll, playCelebration, startCountdown, triggerConfetti]);
 
-  // Keep ref updated so socket listener always uses latest preferences
+  // Keep refs updated so socket/timer callbacks always see latest values
   handleRevealStartedRef.current = handleRevealStarted;
+  stepRef.current = step;
 
   // Disconnect WebSocket and cleanup
   const disconnectWebSocket = useCallback(() => {
@@ -268,6 +288,11 @@ function RevealPage() {
 
     socket.on('connect', () => {
       socket.emit('join-reveal', code);
+      // Socket is live again - the fallback poll would double-deliver events
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
     });
 
     socket.on('viewer-count', (count) => {
@@ -333,10 +358,17 @@ function RevealPage() {
     }
   }, [previewGender, code, isAudioUnlocked]);
 
+  // Latest initPreviewMode without re-triggering the init effect: its
+  // useCallback depends on isAudioUnlocked, and re-running init when audio
+  // unlocks bounced password-protected guests back to the password screen
+  // and tore down a live synced-reveal socket
+  const initPreviewModeRef = useRef(initPreviewMode);
+  initPreviewModeRef.current = initPreviewMode;
+
   // Initialize on mount and cleanup on unmount
   useEffect(() => {
     if (isPreviewMode) {
-      initPreviewMode();
+      initPreviewModeRef.current();
     } else {
       checkStatus();
     }
@@ -355,10 +387,65 @@ function RevealPage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       stopAudio();
       disconnectWebSocket();
+      if (cannonsRef.current) {
+        clearInterval(cannonsRef.current);
+        cannonsRef.current = null;
+      }
+      if (openingTimeoutRef.current) {
+        clearTimeout(openingTimeoutRef.current);
+        openingTimeoutRef.current = null;
+      }
     };
-  }, [code, stopAudio, disconnectWebSocket, isPreviewMode, initPreviewMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, stopAudio, disconnectWebSocket, isPreviewMode]);
+
+  // Phones suspend timers and sockets when the screen locks or the browser
+  // is backgrounded. Hold a screen wake lock while people are waiting for
+  // the moment, and re-sync on return so a reveal that started while the
+  // page was suspended is never missed.
+  useEffect(() => {
+    const WAITING_STEPS = ['ready', 'sound-gate', 'password', 'countdown'];
+
+    const requestWakeLock = async () => {
+      try {
+        if (navigator.wakeLock && WAITING_STEPS.includes(stepRef.current)) {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
+        }
+      } catch {
+        // Not granted or unsupported - nothing to do
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      requestWakeLock(); // Wake locks auto-release when the page hides
+      if (!isPreviewMode && ['ready', 'sound-gate'].includes(stepRef.current)) {
+        genderService.getStatusByCode(code).then((data) => {
+          if (data.revealStartedAt) {
+            handleRevealStartedRef.current?.({
+              gender: data.gender,
+              revealStartedAt: data.revealStartedAt,
+              serverTime: data.serverTime,
+            });
+          }
+        }).catch(() => {});
+      }
+    };
+
+    requestWakeLock();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      wakeLockRef.current?.release?.().catch?.(() => {});
+      wakeLockRef.current = null;
+    };
+  }, [step, code, isPreviewMode]);
 
   const checkStatus = async () => {
+    // Re-entrancy guard: "Check Now" double-taps and effect re-runs must
+    // not run concurrent status checks (each could trigger the reveal)
+    if (checkingStatusRef.current) return;
+    checkingStatusRef.current = true;
     try {
       const data = await genderService.getStatusByCode(code);
 
@@ -441,6 +528,8 @@ function RevealPage() {
     } catch (err) {
       setError(err.message || 'Invalid or expired link');
       setStep('error');
+    } finally {
+      checkingStatusRef.current = false;
     }
   };
 
@@ -454,6 +543,29 @@ function RevealPage() {
     try {
       const result = await authService.verifyRevealPassword(code, passwordInput);
       if (result.valid) {
+        // Re-fetch status: the reveal may have started while the guest was
+        // typing, and synced mode needs its WebSocket (checkStatus returned
+        // at the password branch before ever connecting it)
+        let data = null;
+        try {
+          data = await genderService.getStatusByCode(code);
+        } catch {
+          // Fall through with what we already know
+        }
+        if (preferences.syncedReveal || data?.preferences?.syncedReveal) {
+          connectWebSocket();
+        }
+        if (data?.revealStartedAt) {
+          setGender(data.gender);
+          if (preferences.soundEnabled && !isAudioUnlocked) {
+            setPendingReveal(true);
+            setStep('sound-gate');
+          } else {
+            setStep('reveal');
+            triggerConfetti(data.gender);
+          }
+          return;
+        }
         // Show sound gate if sound is enabled and audio not unlocked
         const needsSoundGate = preferences.soundEnabled && !isAudioUnlocked;
         setStep(needsSoundGate ? 'sound-gate' : 'ready');
@@ -499,7 +611,7 @@ function RevealPage() {
   // Loading
   if (step === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-viewport flex items-center justify-center">
         <Spinner size="large" color="white" />
       </div>
     );
@@ -508,7 +620,7 @@ function RevealPage() {
   // Password required
   if (step === 'password') {
     return (
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+      <div className="min-h-viewport relative overflow-hidden flex items-center justify-center px-4 py-12">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
@@ -566,7 +678,7 @@ function RevealPage() {
   // Not ready
   if (step === 'not-ready') {
     return (
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+      <div className="min-h-viewport relative overflow-hidden flex items-center justify-center px-4 py-12">
         {/* Background gradients */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl" />
@@ -721,7 +833,7 @@ function RevealPage() {
   // Error
   if (step === 'error') {
     return (
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+      <div className="min-h-viewport relative overflow-hidden flex items-center justify-center px-4 py-12">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-red-500/10 rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
@@ -777,7 +889,7 @@ function RevealPage() {
     };
 
     return (
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4">
+      <div className="min-h-viewport relative overflow-hidden flex items-center justify-center px-4">
         <PreviewBadge isPreviewMode={isPreviewMode} />
 
         {/* Subtle background */}
@@ -843,7 +955,7 @@ function RevealPage() {
     const showHostView = !isSynced || isHost;
 
     return (
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+      <div className="min-h-viewport relative overflow-hidden flex items-center justify-center px-4 py-12">
         <PreviewBadge isPreviewMode={isPreviewMode} />
 
         {/* Heart reactions for synced mode */}
@@ -1015,7 +1127,7 @@ function RevealPage() {
   // Countdown
   if (step === 'countdown') {
     return (
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
+      <div className="min-h-viewport relative overflow-hidden flex items-center justify-center">
         <PreviewBadge isPreviewMode={isPreviewMode} />
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-dark-800 to-dark-900" />
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -1037,7 +1149,7 @@ function RevealPage() {
     const { isBoy, colors, backgrounds, balloonPositions, particlePositions } = revealTheme;
 
     return (
-      <div className={`min-h-screen w-full fixed inset-0 overflow-hidden bg-gradient-to-b ${backgrounds.opening}`}>
+      <div className={`min-h-viewport w-full fixed inset-0 overflow-hidden bg-gradient-to-b ${backgrounds.opening}`}>
         <PreviewBadge isPreviewMode={isPreviewMode} />
 
         {/* Animated background particles */}
@@ -1111,7 +1223,7 @@ function RevealPage() {
                   width={pos.size}
                   height={pos.size * 1.4}
                   viewBox="0 0 80 110"
-                  style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))' }}
+                  className="sm:drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
                 >
                   <defs>
                     <radialGradient id={`grad-${i}`} cx="35%" cy="30%" r="60%">
@@ -1132,23 +1244,14 @@ function RevealPage() {
                   <ellipse cx="24" cy="22" rx="4" ry="5" fill="white" opacity="0.7" />
                   {/* Balloon knot */}
                   <path d="M36,74 Q40,78 44,74 L42,76 Q40,80 38,76 Z" fill={colors[pos.colorIndex]} />
-                  {/* Curvy string */}
-                  <motion.path
+                  {/* Curvy string - static: per-frame path morphing forces a
+                      full re-raster of the filtered SVG on every frame */}
+                  <path
                     d="M40,78 Q44,88 38,98 Q34,108 40,118"
                     stroke={colors[pos.colorIndex]}
                     strokeWidth="1.5"
                     fill="none"
                     opacity="0.6"
-                    animate={{ d: [
-                      "M40,78 Q44,88 38,98 Q34,108 40,118",
-                      "M40,78 Q36,88 42,98 Q46,108 40,118",
-                      "M40,78 Q44,88 38,98 Q34,108 40,118",
-                    ]}}
-                    transition={{
-                      duration: 0.6,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
                   />
                 </svg>
               </motion.div>
@@ -1190,11 +1293,16 @@ function RevealPage() {
 
   // Final reveal
   if (step === 'reveal') {
-    const { isBoy, backgrounds, displayValues } = revealTheme;
+    const { isBoy, backgrounds, displayValues, intensity } = revealTheme;
     const isSynced = preferences.syncedReveal && !isPreviewMode;
+    // Decorative infinite animations run on the JS thread; scale their
+    // count with the (device-adjusted) intensity so old phones spend
+    // their budget on the confetti, not the garnish
+    const sparkleCount = intensity.decorSparkles ?? 12;
+    const orbCount = intensity.decorOrbs ?? 4;
 
     return (
-      <div className={`min-h-screen relative overflow-hidden flex items-center justify-center px-4 bg-gradient-to-br ${backgrounds.main}`}>
+      <div className={`min-h-viewport relative overflow-hidden flex items-center justify-center px-4 bg-gradient-to-br ${backgrounds.main}`}>
         <PreviewBadge isPreviewMode={isPreviewMode} />
 
         {/* Heart reactions for synced mode */}
@@ -1214,7 +1322,7 @@ function RevealPage() {
           {/* Main emoji with sparkles */}
           <div className="relative mb-6">
             {/* Sparkle particles around emoji */}
-            {[...Array(12)].map((_, i) => {
+            {[...Array(sparkleCount)].map((_, i) => {
               const positions = [
                 { top: '5%', left: '15%' },
                 { top: '0%', left: '50%' },
@@ -1286,7 +1394,7 @@ function RevealPage() {
           <div className="flex items-center justify-center gap-2 mb-8 relative">
             {/* Left side - flowing orbs emanating outward */}
             <div className="flex items-center gap-1.5">
-              {[...Array(4)].map((_, i) => {
+              {[...Array(orbCount)].map((_, i) => {
                 const sizes = [3, 4, 5, 6]; // Grow towards center
                 const opacity = 0.8; // Consistent opacity
                 const delays = [0.9, 0.75, 0.6, 0.45]; // Appear from center outward
@@ -1346,7 +1454,7 @@ function RevealPage() {
             {/* Hearts container with sparkles */}
             <div className="relative flex items-center gap-3 px-2">
               {/* Sparkle particles - positioned around hearts */}
-              {[...Array(8)].map((_, i) => {
+              {[...Array(Math.min(8, sparkleCount))].map((_, i) => {
                 const positions = [
                   { top: '-8px', left: '10%' },
                   { top: '-4px', right: '15%' },
@@ -1460,7 +1568,7 @@ function RevealPage() {
 
             {/* Right side - flowing orbs emanating outward (mirrored: small to big) */}
             <div className="flex items-center gap-1.5">
-              {[...Array(4)].map((_, i) => {
+              {[...Array(orbCount)].map((_, i) => {
                 const sizes = [3, 4, 5, 6]; // Grow away from center (mirrored)
                 const opacity = 0.8; // Consistent opacity
                 const delays = [0.45, 0.6, 0.75, 0.9]; // Appear from center outward
@@ -1529,7 +1637,7 @@ function RevealPage() {
                 ? 'bg-gradient-to-r from-blue-500/30 via-blue-400/40 to-blue-500/30 border border-blue-300/30 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:border-blue-300/50'
                 : 'bg-gradient-to-r from-pink-500/30 via-pink-400/40 to-pink-500/30 border border-pink-300/30 shadow-lg shadow-pink-500/20 hover:shadow-pink-500/40 hover:border-pink-300/50'
             }`}
-            onClick={() => triggerConfetti(gender)}
+            onClick={() => triggerConfetti(gender, false)}
           >
             <span className="flex items-center gap-2">
               {/* Sparkles SVG icon */}
@@ -1545,8 +1653,8 @@ function RevealPage() {
 
         {/* Live viewer count - fixed bottom left (matching heart button style on right) */}
         {isSynced && viewerCount > 1 && (
-          <div className="fixed bottom-8 left-8 z-40">
-            <div className="relative w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex flex-col items-center justify-center shadow-lg shadow-black/10">
+          <div className="fixed left-8 z-40" style={{ bottom: 'max(2rem, calc(env(safe-area-inset-bottom) + 0.75rem))' }}>
+            <div className="relative w-14 h-14 bg-white/15 sm:bg-white/10 sm:backdrop-blur-md border border-white/20 rounded-full flex flex-col items-center justify-center shadow-lg shadow-black/10">
               {/* Subtle green glow ring */}
               <div className="absolute inset-0 rounded-full border border-green-400/30" />
 

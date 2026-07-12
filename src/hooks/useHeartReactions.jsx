@@ -34,7 +34,12 @@ const useHeartReactions = ({ socketRef, roomCode, cooldownMs = 250, heartDuratio
       drift: -20 + Math.random() * 40,
     };
 
-    setHearts(prev => [...prev, heart]);
+    // Cap concurrent hearts: a room full of tapping guests would otherwise
+    // pile up unbounded floating-heart animations on every phone
+    setHearts(prev => {
+      const trimmed = prev.length >= 25 ? prev.slice(prev.length - 24) : prev;
+      return [...trimmed, heart];
+    });
 
     // Auto-remove after animation completes
     setTimeout(() => {

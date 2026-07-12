@@ -25,6 +25,8 @@
 
   button {
     @apply font-sans cursor-pointer border-none outline-none transition-all duration-300;
+    /* Prevent iOS double-tap-to-zoom on rapid taps (More Confetti, hearts) */
+    touch-action: manipulation;
   }
 
   button:active {
@@ -176,6 +178,14 @@
     opacity: 0.7;
     transform: scale(1.2);
   }
+}
+
+/* Small-viewport-safe full height: on mobile browsers 100vh includes the
+   collapsed URL bar, hiding bottom content (e.g. the More Confetti button)
+   behind it. svh is the always-visible height; vh stays as the fallback. */
+.min-h-viewport {
+  min-height: 100vh;
+  min-height: 100svh;
 }
 
 .animate-scale-in {

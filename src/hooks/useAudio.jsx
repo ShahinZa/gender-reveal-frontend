@@ -272,9 +272,12 @@ const useAudio = () => {
       });
 
       if (durationSeconds) {
+        // Small grace so the drumroll is not cut just before "0" when the
+        // countdown's chained timers drift on slow devices; the celebration
+        // pauses it anyway the moment it starts
         drumrollTimerRef.current = setTimeout(() => {
           if (drumrollRef.current) drumrollRef.current.pause();
-        }, durationSeconds * 1000);
+        }, durationSeconds * 1000 + 400);
       }
     } catch (error) {
       console.log('Audio not supported');
