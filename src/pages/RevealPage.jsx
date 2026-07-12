@@ -7,7 +7,7 @@ import { genderService, authService } from '../api';
 import { useCountdown, useAudio, useHeartReactions, useRevealTheme } from '../hooks';
 import { Button, Card, Spinner, Alert } from '../components/common';
 import HeartReactions from '../components/HeartReactions';
-import { THEME_COLORS, INTENSITY_SETTINGS, DEFAULT_PREFERENCES } from '../constants/revealThemes';
+import { THEME_COLORS, INTENSITY_SETTINGS, DEFAULT_PREFERENCES, getEffectiveIntensityKey } from '../constants/revealThemes';
 
 /**
  * PreviewBadge Component - Shows preview mode indicator
@@ -110,7 +110,7 @@ function RevealPage() {
   // Memoized confetti trigger - defined early as it's used by multiple callbacks
   const triggerConfetti = useCallback((revealedGender, withSound = true) => {
     const theme = THEME_COLORS[preferences.theme] || THEME_COLORS.classic;
-    const intensity = INTENSITY_SETTINGS[preferences.animationIntensity] || INTENSITY_SETTINGS.medium;
+    const intensity = INTENSITY_SETTINGS[getEffectiveIntensityKey(preferences.animationIntensity)];
     const colors = revealedGender === 'boy' ? theme.boy : theme.girl;
 
     if (withSound && preferences.soundEnabled) {
@@ -121,32 +121,38 @@ function RevealPage() {
       particleCount: intensity.particleCount,
       spread: 100,
       origin: { y: 0.6 },
+      ticks: intensity.confettiTicks,
+      disableForReducedMotion: true,
       colors
     });
 
-    const duration = 5000;
-    const end = Date.now() + duration;
-
-    const frame = () => {
+    // Side cannons fire on a fixed interval, not every animation frame —
+    // per-frame confetti() calls overwhelm low-end phone CPUs/GPUs.
+    const end = Date.now() + intensity.sideCannonDuration;
+    const cannons = setInterval(() => {
+      if (Date.now() >= end) {
+        clearInterval(cannons);
+        return;
+      }
       confetti({
-        particleCount: Math.ceil(intensity.particleCount / 50),
+        particleCount: intensity.sideCannonParticles,
         angle: 60,
         spread: 55,
         origin: { x: 0, y: 0.8 },
+        ticks: intensity.confettiTicks,
+        disableForReducedMotion: true,
         colors
       });
       confetti({
-        particleCount: Math.ceil(intensity.particleCount / 50),
+        particleCount: intensity.sideCannonParticles,
         angle: 120,
         spread: 55,
         origin: { x: 1, y: 0.8 },
+        ticks: intensity.confettiTicks,
+        disableForReducedMotion: true,
         colors
       });
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    };
-    frame();
+    }, intensity.sideCannonInterval);
   }, [preferences.theme, preferences.animationIntensity, preferences.soundEnabled, celebrationAudioUrl, playCelebration]);
 
   // Countdown complete handler

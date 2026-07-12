@@ -4,6 +4,13 @@ import { authService } from '../api';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+// Icon per animation intensity: phone (low), sparkles (medium), bolt (high)
+const INTENSITY_ICONS = {
+  low: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />,
+  medium: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />,
+  high: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />,
+};
+
 /**
  * RevealSettings Component
  * Single Responsibility: Manage user preferences for the reveal experience
@@ -387,11 +394,25 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                       : 'border-white/10 hover:border-white/30'
                   }`}
                 >
+                  <svg
+                    className={`w-5 h-5 mx-auto mb-1.5 ${preferences.animationIntensity === key ? 'text-white' : 'text-white/45'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    {INTENSITY_ICONS[key]}
+                  </svg>
                   <div className="text-white/80 text-sm font-medium">{setting.label}</div>
                   <div className="text-white/40 text-xs mt-1">{setting.description}</div>
                 </button>
               ))}
             </div>
+            <p className="text-white/40 text-xs mt-2.5 flex items-start gap-1.5">
+              <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <span>Guests on slower phones automatically get a lighter version, so the moment stays smooth for everyone.</span>
+            </p>
           </div>
 
           {/* Sound Toggle */}

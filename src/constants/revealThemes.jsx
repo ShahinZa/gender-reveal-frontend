@@ -51,23 +51,53 @@ export const THEME_COLORS = {
 
 export const INTENSITY_SETTINGS = {
   low: {
-    particleCount: 75,
-    balloonCount: 10,
+    particleCount: 50,
+    balloonCount: 6,
+    ambientParticles: 8,
+    sideCannonParticles: 3,
+    sideCannonInterval: 250,
+    sideCannonDuration: 3000,
+    confettiTicks: 120,
     label: 'Low',
-    description: 'Subtle animations',
+    description: 'Best for phones',
   },
   medium: {
     particleCount: 150,
-    balloonCount: 20,
+    balloonCount: 16,
+    ambientParticles: 14,
+    sideCannonParticles: 5,
+    sideCannonInterval: 150,
+    sideCannonDuration: 4000,
+    confettiTicks: 180,
     label: 'Medium',
-    description: 'Balanced experience',
+    description: 'Most devices',
   },
   high: {
     particleCount: 300,
-    balloonCount: 35,
+    balloonCount: 30,
+    ambientParticles: 20,
+    sideCannonParticles: 8,
+    sideCannonInterval: 90,
+    sideCannonDuration: 5000,
+    confettiTicks: 220,
     label: 'High',
-    description: 'Maximum celebration',
+    description: 'Fast devices',
   },
+};
+
+// Guests watch the reveal on their own devices, so the host's intensity pick
+// can't account for a low-spec phone in the audience. Step down one tier when
+// the viewing device is a touch device with few cores or little memory.
+const INTENSITY_STEP_DOWN = { high: 'medium', medium: 'low', low: 'low' };
+
+export const getEffectiveIntensityKey = (key) => {
+  const requested = INTENSITY_SETTINGS[key] ? key : 'medium';
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return requested;
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+  const lowSpec =
+    (navigator.hardwareConcurrency !== undefined && navigator.hardwareConcurrency <= 4) ||
+    (navigator.deviceMemory !== undefined && navigator.deviceMemory <= 4);
+  return coarsePointer && lowSpec ? INTENSITY_STEP_DOWN[requested] : requested;
 };
 
 export const COUNTDOWN_OPTIONS = [

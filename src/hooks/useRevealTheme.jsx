@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { THEME_COLORS, INTENSITY_SETTINGS, DEFAULT_PREFERENCES } from '../constants/revealThemes';
+import { THEME_COLORS, INTENSITY_SETTINGS, DEFAULT_PREFERENCES, getEffectiveIntensityKey } from '../constants/revealThemes';
 import { padColors, generateBalloonPositions, generateParticlePositions } from '../utils/balloonUtils';
 
 /**
@@ -20,9 +20,9 @@ const useRevealTheme = ({ preferences, gender }) => {
     return THEME_COLORS[preferences?.theme] || THEME_COLORS.classic;
   }, [preferences?.theme]);
 
-  // Memoize intensity settings
+  // Memoize intensity settings (stepped down on low-spec touch devices)
   const intensity = useMemo(() => {
-    return INTENSITY_SETTINGS[preferences?.animationIntensity] || INTENSITY_SETTINGS.medium;
+    return INTENSITY_SETTINGS[getEffectiveIntensityKey(preferences?.animationIntensity)];
   }, [preferences?.animationIntensity]);
 
   // Memoize colors based on gender
@@ -49,8 +49,8 @@ const useRevealTheme = ({ preferences, gender }) => {
 
   // Memoize particle positions
   const particlePositions = useMemo(() => {
-    return generateParticlePositions(20);
-  }, []);
+    return generateParticlePositions(intensity.ambientParticles);
+  }, [intensity.ambientParticles]);
 
   // Memoize display values
   const displayValues = useMemo(() => ({
