@@ -841,12 +841,12 @@ function RevealPage() {
             </div>
 
             <button
-              className="group relative overflow-hidden bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 font-bold py-6 px-14 rounded-full text-2xl shadow-xl shadow-amber-400/30 hover:shadow-2xl hover:shadow-amber-400/50 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              className="group relative overflow-hidden bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 font-bold py-4 px-9 text-xl sm:py-6 sm:px-14 sm:text-2xl rounded-full shadow-xl shadow-amber-400/30 hover:shadow-2xl hover:shadow-amber-400/50 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
               onClick={startReveal}
               disabled={loading}
             >
               <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-              <span className="relative flex items-center justify-center gap-2.5">
+              <span className="relative flex items-center justify-center gap-2.5 whitespace-nowrap">
                 {loading ? (
                   <span className="inline-block w-8 h-8 border-4 border-amber-950/30 border-t-amber-950 rounded-full animate-spin" />
                 ) : (
@@ -885,8 +885,9 @@ function RevealPage() {
             </p>
           </div>
         ) : (
-          // Guest view - waiting for host to start
-          <div className="relative z-10 text-center animate-fade-in max-w-md">
+          // Guest view - waiting for host to start; bottom padding keeps the
+          // host-login footer clear of the fixed heart-reaction button on phones
+          <div className="relative z-10 text-center animate-fade-in max-w-md pb-24 sm:pb-0">
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
               <svg className="w-10 h-10 text-purple-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1137,7 +1138,7 @@ function RevealPage() {
     const isSynced = preferences.syncedReveal && !isPreviewMode;
 
     return (
-      <div className={`min-h-screen relative overflow-hidden flex items-center justify-center bg-gradient-to-br ${backgrounds.main}`}>
+      <div className={`min-h-screen relative overflow-hidden flex items-center justify-center px-4 bg-gradient-to-br ${backgrounds.main}`}>
         <PreviewBadge isPreviewMode={isPreviewMode} />
 
         {/* Heart reactions for synced mode */}
