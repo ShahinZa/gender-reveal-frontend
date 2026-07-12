@@ -60,6 +60,9 @@ function RevealPage() {
 
   // Sound gate state
   const [enablingSound, setEnablingSound] = useState(false);
+  // Set when the reveal already happened before this visit: after the
+  // sound gate we go straight to the celebration instead of 'ready'
+  const [pendingReveal, setPendingReveal] = useState(false);
 
   // Password protection state
   const [passwordRequired, setPasswordRequired] = useState(false);
@@ -75,7 +78,7 @@ function RevealPage() {
   const spawnHeartRef = useRef(null); // Ref to hold latest spawnHeart function
   const handleRevealStartedRef = useRef(null); // Ref to hold latest handler
 
-  const { unlockAudio, isAudioUnlocked, preloadDrumroll, preloadCelebration, playDrumroll, playCelebration, stopAudio, audioStatus } = useAudio();
+  const { unlockAudio, isAudioUnlocked, primeAudioPlayback, preloadDrumroll, preloadCelebration, playDrumroll, playCelebration, stopAudio, audioStatus } = useAudio();
 
   // Heart reactions hook
   const { hearts, sendHeart, spawnHeart } = useHeartReactions({
@@ -387,10 +390,23 @@ function RevealPage() {
       } else {
         // Check if reveal already started (for synced mode)
         if (data.revealStartedAt) {
+          // Already showing (or about to show) the celebration - the init
+          // effect re-runs when audio unlocks, and this must not re-fire
+          // the confetti and celebration sound
+          if (step === 'reveal' || pendingReveal) {
+            return;
+          }
           // Reveal already in progress or completed
           setGender(data.gender);
-          setStep('reveal');
-          triggerConfetti(data.gender);
+          // Without a user gesture mobile browsers block the celebration
+          // audio entirely, so late visitors go through the sound gate too
+          if (userPrefs.soundEnabled && !isAudioUnlocked) {
+            setPendingReveal(true);
+            setStep('sound-gate');
+          } else {
+            setStep('reveal');
+            triggerConfetti(data.gender);
+          }
           // Still connect WebSocket for heart reactions in synced mode
           if (data.preferences?.syncedReveal) {
             connectWebSocket();
@@ -453,6 +469,12 @@ function RevealPage() {
 
   const startReveal = async () => {
     setLoading(true);
+
+    // Prime while the tap gesture is still active - after the awaited
+    // API call the activation may have expired on mobile Safari
+    if (preferences.soundEnabled) {
+      primeAudioPlayback(countdownAudioUrl, celebrationAudioUrl);
+    }
 
     try {
       // In preview mode, skip API call - gender is already set
@@ -724,19 +746,34 @@ function RevealPage() {
     const handleEnableSound = () => {
       if (enablingSound) return;
       setEnablingSound(true);
-      // Let the spinner paint before the audio unlock and the heavier
-      // ready-screen mount block the main thread on slower phones
+      // Unlock and bless the real audio elements synchronously while the
+      // tap gesture is active - the celebration later plays from a timer
+      // callback, which mobile browsers block for unblessed elements
+      unlockAudio();
+      primeAudioPlayback(countdownAudioUrl, celebrationAudioUrl);
+      // Let the spinner paint before the heavier next screen mounts
       setTimeout(() => {
-        unlockAudio();
         setEnablingSound(false);
-        setStep('ready');
+        if (pendingReveal) {
+          setPendingReveal(false);
+          setStep('reveal');
+          triggerConfetti(gender);
+        } else {
+          setStep('ready');
+        }
       }, 50);
     };
 
     const handleContinueSilent = () => {
       // Disable sound for this session
       setPreferences(prev => ({ ...prev, soundEnabled: false }));
-      setStep('ready');
+      if (pendingReveal) {
+        setPendingReveal(false);
+        setStep('reveal');
+        triggerConfetti(gender, false);
+      } else {
+        setStep('ready');
+      }
     };
 
     return (

@@ -68,6 +68,48 @@ const useAudio = () => {
     }
   }, []);
 
+  const ensureElement = useCallback((ref, fallbackSrc) => {
+    if (!ref.current) {
+      const audio = new Audio();
+      audio.crossOrigin = 'anonymous';
+      audio.preload = 'auto';
+      audio.volume = 0.8;
+      audio.src = fallbackSrc;
+      ref.current = audio;
+    }
+    return ref.current;
+  }, []);
+
+  // Mobile browsers only allow play() calls that trace back to a user
+  // gesture, and the reveal plays audio from timer/socket callbacks.
+  // Call this from inside a tap handler: a muted play/pause blesses the
+  // real elements so the later audible play() is allowed.
+  const primeAudioPlayback = useCallback((countdownUrl, celebrationUrl) => {
+    [
+      [drumrollRef, countdownUrl || '/drumroll.mp3'],
+      [celebrationRef, celebrationUrl || '/celebration.mp3'],
+    ].forEach(([ref, src]) => {
+      try {
+        const el = ensureElement(ref, src);
+        if (el.dataset.primed === 'true') return;
+        el.muted = true;
+        const p = el.play();
+        if (p && p.then) {
+          p.then(() => {
+            el.pause();
+            el.currentTime = 0;
+            el.muted = false;
+            el.dataset.primed = 'true';
+          }).catch(() => {
+            el.muted = false;
+          });
+        }
+      } catch {
+        // Audio not supported
+      }
+    });
+  }, [ensureElement]);
+
   const preloadDrumroll = useCallback(async (audioUrl) => {
     if (!audioUrl) return;
 
@@ -104,7 +146,9 @@ const useAudio = () => {
       }
 
       const blobUrl = URL.createObjectURL(blob);
-      const audio = new Audio();
+      // Reuse the existing element: replacing it would lose the
+      // user-gesture blessing granted by primeAudioPlayback on mobile
+      const audio = drumrollRef.current || new Audio();
       audio.volume = 0.8;
       audio.src = blobUrl;
 
@@ -171,7 +215,9 @@ const useAudio = () => {
       }
 
       const blobUrl = URL.createObjectURL(blob);
-      const audio = new Audio();
+      // Reuse the existing element: replacing it would lose the
+      // user-gesture blessing granted by primeAudioPlayback on mobile
+      const audio = celebrationRef.current || new Audio();
       audio.volume = 0.8;
       audio.src = blobUrl;
 
@@ -209,13 +255,7 @@ const useAudio = () => {
         drumrollTimerRef.current = null;
       }
 
-      if (!drumrollRef.current) {
-        const audio = new Audio();
-        audio.crossOrigin = 'anonymous';
-        audio.volume = 0.8;
-        audio.src = audioUrl || '/drumroll.mp3';
-        drumrollRef.current = audio;
-      }
+      ensureElement(drumrollRef, audioUrl || '/drumroll.mp3');
 
       drumrollRef.current.currentTime = 0;
 
@@ -225,7 +265,10 @@ const useAudio = () => {
       }
 
       drumrollRef.current.play().catch((err) => {
-        console.log('Audio play failed:', err.message);
+        console.log('Audio play failed, retrying:', err.message);
+        setTimeout(() => {
+          drumrollRef.current?.play().catch((e) => console.log('Audio retry failed:', e.message));
+        }, 150);
       });
 
       if (durationSeconds) {
@@ -236,19 +279,13 @@ const useAudio = () => {
     } catch (error) {
       console.log('Audio not supported');
     }
-  }, []);
+  }, [ensureElement]);
 
   const playCelebration = useCallback((audioUrl) => {
     try {
       if (drumrollRef.current) drumrollRef.current.pause();
 
-      if (!celebrationRef.current) {
-        const audio = new Audio();
-        audio.crossOrigin = 'anonymous';
-        audio.volume = 0.8;
-        audio.src = audioUrl || '/celebration.mp3';
-        celebrationRef.current = audio;
-      }
+      ensureElement(celebrationRef, audioUrl || '/celebration.mp3');
 
       celebrationRef.current.currentTime = 0;
 
@@ -258,12 +295,15 @@ const useAudio = () => {
       }
 
       celebrationRef.current.play().catch((err) => {
-        console.log('Celebration play failed:', err.message);
+        console.log('Celebration play failed, retrying:', err.message);
+        setTimeout(() => {
+          celebrationRef.current?.play().catch((e) => console.log('Celebration retry failed:', e.message));
+        }, 150);
       });
     } catch (error) {
       console.log('Audio not supported');
     }
-  }, []);
+  }, [ensureElement]);
 
   const stopAudio = useCallback(() => {
     if (drumrollTimerRef.current) {
@@ -289,6 +329,7 @@ const useAudio = () => {
   return {
     unlockAudio,
     isAudioUnlocked,
+    primeAudioPlayback,
     preloadDrumroll,
     preloadCelebration,
     playDrumroll,
