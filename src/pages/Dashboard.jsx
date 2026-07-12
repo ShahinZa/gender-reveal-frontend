@@ -406,48 +406,50 @@ function Dashboard() {
           {/* Code Cards */}
           <div className="grid gap-2.5 mb-8">
             {/* Secret Keeper Code */}
-            <div className={`flex items-center gap-3 bg-white/[0.06] border border-white/10 rounded-2xl p-2.5 pl-3 ${status?.isSet ? 'opacity-60' : ''}`}>
+            <div className={`flex flex-wrap sm:flex-nowrap items-center gap-3 gap-y-2 bg-white/[0.06] border border-white/10 rounded-2xl p-2.5 pl-3 ${status?.isSet ? 'opacity-60' : ''}`}>
               <span className="w-9 h-9 rounded-xl bg-pink-500/15 border border-pink-400/20 flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
               </span>
-              <div className="w-32 sm:w-40 flex-shrink-0 min-w-0">
+              <div className="flex-1 sm:flex-none sm:w-40 min-w-0">
                 <p className="text-white font-medium text-sm leading-tight truncate">The Secret Keeper</p>
                 <p className="text-white/40 text-[11px] leading-tight truncate">{status?.isSet ? 'Locked · Step 1' : 'For whoever knows · Step 1'}</p>
               </div>
-              <div
-                className={`flex-1 min-w-0 text-center bg-black/25 rounded-lg px-3 py-2 transition-all ${!status?.isSet ? 'cursor-pointer hover:bg-black/35' : ''}`}
-                onClick={() => !status?.isSet && copyLink('doctor')}
-              >
-                <code className="text-white/90 font-mono text-sm tracking-wider">{user.doctorCode}</code>
+              <div className="w-full sm:w-auto sm:flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
+                <div
+                  className={`flex-1 min-w-0 text-center bg-black/25 rounded-lg px-3 py-2 transition-all ${!status?.isSet ? 'cursor-pointer hover:bg-black/35' : ''}`}
+                  onClick={() => !status?.isSet && copyLink('doctor')}
+                >
+                  <code className="text-white/90 font-mono text-sm tracking-wider">{user.doctorCode}</code>
+                </div>
+                <button
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 flex-shrink-0 transition-all ${
+                    status?.isSet ? 'bg-white/5 text-white/40 cursor-not-allowed' : 'bg-white text-slate-900 hover:bg-white/90'
+                  }`}
+                  onClick={() => copyLink('doctor')}
+                  disabled={status?.isSet}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {copied === 'doctor' ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    )}
+                  </svg>
+                  <span className="hidden sm:inline">{copied === 'doctor' ? 'Copied' : 'Copy'}</span>
+                </button>
+                <button
+                  className={`p-2 rounded-lg flex-shrink-0 transition-all ${status?.isSet ? 'bg-white/5 text-white/40 cursor-not-allowed' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                  onClick={() => !status?.isSet && setShowQR('doctor')}
+                  disabled={status?.isSet}
+                  title="Show QR Code"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                  </svg>
+                </button>
               </div>
-              <button
-                className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 flex-shrink-0 transition-all ${
-                  status?.isSet ? 'bg-white/5 text-white/40 cursor-not-allowed' : 'bg-white text-slate-900 hover:bg-white/90'
-                }`}
-                onClick={() => copyLink('doctor')}
-                disabled={status?.isSet}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {copied === 'doctor' ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  )}
-                </svg>
-                <span className="hidden sm:inline">{copied === 'doctor' ? 'Copied' : 'Copy'}</span>
-              </button>
-              <button
-                className={`p-2 rounded-lg flex-shrink-0 transition-all ${status?.isSet ? 'bg-white/5 text-white/40 cursor-not-allowed' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                onClick={() => !status?.isSet && setShowQR('doctor')}
-                disabled={status?.isSet}
-                title="Show QR Code"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                </svg>
-              </button>
             </div>
 
             {/* Step 2 (they pick) */}
@@ -472,59 +474,61 @@ function Dashboard() {
 
             {/* Reveal Code */}
             <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-2.5 pl-3">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 gap-y-2">
                 <span className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-400/20 flex items-center justify-center flex-shrink-0">
                   <svg className="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112-2h.01L12 8zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
                   </svg>
                 </span>
-                <div className="w-32 sm:w-40 flex-shrink-0 min-w-0">
+                <div className="flex-1 sm:flex-none sm:w-40 min-w-0">
                   <p className="text-white font-medium text-sm leading-tight truncate">The Big Reveal</p>
                   <p className="text-white/40 text-[11px] leading-tight truncate">At your party · Step 3</p>
                 </div>
-                <div
-                  className="flex-1 min-w-0 text-center bg-black/25 rounded-lg px-3 py-2 cursor-pointer hover:bg-black/35 transition-all"
-                  onClick={() => copyLink('reveal')}
-                >
-                  <code className="text-white/90 font-mono text-sm tracking-wider">{user.revealCode}</code>
+                <div className="w-full sm:w-auto sm:flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
+                  <div
+                    className="flex-1 min-w-0 text-center bg-black/25 rounded-lg px-3 py-2 cursor-pointer hover:bg-black/35 transition-all"
+                    onClick={() => copyLink('reveal')}
+                  >
+                    <code className="text-white/90 font-mono text-sm tracking-wider">{user.revealCode}</code>
+                  </div>
+                  <button
+                    className="px-3 py-2 rounded-lg text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 flex items-center gap-1.5 flex-shrink-0 transition-all"
+                    onClick={() => copyLink('reveal')}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {copied === 'reveal' ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      )}
+                    </svg>
+                    <span className="hidden sm:inline">{copied === 'reveal' ? 'Copied' : 'Copy'}</span>
+                  </button>
+                  <button
+                    className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 flex-shrink-0 transition-all"
+                    onClick={() => setShowQR('reveal')}
+                    title="Show QR Code"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
+                  </button>
+                  <button
+                    className={`p-2 rounded-lg flex-shrink-0 transition-all ${
+                      passwordEnabled
+                        ? 'bg-emerald-500/15 text-emerald-300'
+                        : showPasswordSection
+                          ? 'bg-white/15 text-white'
+                          : 'bg-white/10 text-white/60 hover:text-white'
+                    }`}
+                    onClick={() => !passwordEnabled && setShowPasswordSection(!showPasswordSection)}
+                    title={passwordEnabled ? 'Password protected' : 'Password protect this reveal'}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </button>
                 </div>
-                <button
-                  className="px-3 py-2 rounded-lg text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 flex items-center gap-1.5 flex-shrink-0 transition-all"
-                  onClick={() => copyLink('reveal')}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {copied === 'reveal' ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    )}
-                  </svg>
-                  <span className="hidden sm:inline">{copied === 'reveal' ? 'Copied' : 'Copy'}</span>
-                </button>
-                <button
-                  className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 flex-shrink-0 transition-all"
-                  onClick={() => setShowQR('reveal')}
-                  title="Show QR Code"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                  </svg>
-                </button>
-                <button
-                  className={`p-2 rounded-lg flex-shrink-0 transition-all ${
-                    passwordEnabled
-                      ? 'bg-emerald-500/15 text-emerald-300'
-                      : showPasswordSection
-                        ? 'bg-white/15 text-white'
-                        : 'bg-white/10 text-white/60 hover:text-white'
-                  }`}
-                  onClick={() => !passwordEnabled && setShowPasswordSection(!showPasswordSection)}
-                  title={passwordEnabled ? 'Password protected' : 'Password protect this reveal'}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </button>
               </div>
 
               {/* Reveal mode + password footer */}

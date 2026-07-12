@@ -238,19 +238,19 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <div className="text-left">
+          <div className="text-left min-w-0">
             <h3 className="text-white font-semibold">Customize The Big Reveal</h3>
             <p className="text-white/50 text-sm">Choose the theme, countdown, and animations your guests will see.</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {saving && (
             <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
           )}
@@ -313,12 +313,12 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
           {/* Countdown Duration */}
           <div>
             <label className="block text-white/70 text-sm font-medium mb-3">Countdown Duration</label>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {COUNTDOWN_OPTIONS.map(option => (
                 <button
                   key={option.value}
                   onClick={() => handleChange('countdownDuration', option.value)}
-                  className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
+                  className={`py-3 px-2 sm:px-4 rounded-xl border-2 transition-all ${
                     preferences.countdownDuration === option.value
                       ? 'border-white/50 bg-white/10 text-white'
                       : 'border-white/10 text-white/60 hover:border-white/30'
@@ -341,14 +341,14 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                 Coming Soon
               </span>
             </label>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {BABY_COUNT_OPTIONS.map(option => (
                 <button
                   key={option.value}
                   disabled={true}
-                  className="flex-1 py-3 px-4 rounded-xl border-2 transition-all border-white/10 text-white/60 cursor-not-allowed"
+                  className="py-3 px-2 sm:px-4 rounded-xl border-2 transition-all border-white/10 text-white/60 cursor-not-allowed"
                 >
-                  <div className="text-xl mb-1">{option.icon}</div>
+                  <div className="text-lg sm:text-xl mb-1">{option.icon}</div>
                   <div className="text-sm">{option.label}</div>
                 </button>
               ))}
@@ -358,12 +358,12 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
           {/* Animation Intensity */}
           <div>
             <label className="block text-white/70 text-sm font-medium mb-3">Animation Intensity</label>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {Object.entries(INTENSITY_SETTINGS).map(([key, setting]) => (
                 <button
                   key={key}
                   onClick={() => handleChange('animationIntensity', key)}
-                  className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
+                  className={`py-3 px-2 sm:px-4 rounded-xl border-2 transition-all ${
                     preferences.animationIntensity === key
                       ? 'border-white/50 bg-white/10'
                       : 'border-white/10 hover:border-white/30'
@@ -387,9 +387,9 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                   : 'border-white/10 bg-white/5'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <svg
-                  className={`w-5 h-5 ${preferences.soundEnabled ? 'text-green-400' : 'text-white/40'}`}
+                  className={`w-5 h-5 flex-shrink-0 ${preferences.soundEnabled ? 'text-green-400' : 'text-white/40'}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -400,12 +400,12 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
                   )}
                 </svg>
-                <span className={preferences.soundEnabled ? 'text-white' : 'text-white/60'}>
+                <span className={`text-left ${preferences.soundEnabled ? 'text-white' : 'text-white/60'}`}>
                   {preferences.soundEnabled ? 'Drumroll & celebration sounds enabled' : 'Sound effects disabled'}
                 </span>
               </div>
               <div
-                className={`w-12 h-6 rounded-full transition-colors relative ${
+                className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${
                   preferences.soundEnabled ? 'bg-green-500' : 'bg-white/20'
                 }`}
               >
@@ -432,9 +432,9 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                   : 'border-white/10 bg-white/5'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <svg
-                  className={`w-5 h-5 ${preferences.syncedReveal ? 'text-purple-400' : 'text-white/40'}`}
+                  className={`w-5 h-5 flex-shrink-0 ${preferences.syncedReveal ? 'text-purple-400' : 'text-white/40'}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -741,11 +741,11 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
             <p className="text-white/40 text-xs mb-4">
               See how your reveal will look with current settings (opens in new tab)
             </p>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
               <button
                 onClick={() => openPreview('boy')}
                 disabled={!revealCode}
-                className="flex-1 py-3 px-4 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                className="py-3 px-4 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
               >
                 <div className="flex items-center justify-center gap-2">
                   <span className="text-2xl group-hover:scale-110 transition-transform">{preferences.boyEmoji || '👦'}</span>
@@ -758,7 +758,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
               <button
                 onClick={() => openPreview('girl')}
                 disabled={!revealCode}
-                className="flex-1 py-3 px-4 rounded-xl border-2 border-pink-500/30 bg-pink-500/10 hover:bg-pink-500/20 hover:border-pink-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                className="py-3 px-4 rounded-xl border-2 border-pink-500/30 bg-pink-500/10 hover:bg-pink-500/20 hover:border-pink-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
               >
                 <div className="flex items-center justify-center gap-2">
                   <span className="text-2xl group-hover:scale-110 transition-transform">{preferences.girlEmoji || '👧'}</span>

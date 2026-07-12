@@ -30,6 +30,15 @@ const Footer = () => {
           >
             Terms
           </button>
+          <a
+            href="https://buymeacoffee.com/babyreveal.party"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/25 hover:text-amber-300/80 text-xs transition-colors inline-flex items-center gap-1"
+          >
+            <span aria-hidden="true">☕</span>
+            Support us
+          </a>
         </div>
         <span className="text-white/25 text-xs">
           &copy; {new Date().getFullYear()} babyreveal.party
