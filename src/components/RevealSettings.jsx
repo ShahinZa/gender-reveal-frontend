@@ -328,6 +328,24 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                 </button>
               ))}
             </div>
+            {preferences.soundEnabled && preferences.countdownDuration !== 5 && !preferences.customAudio?.countdown && (
+              <div className="mt-2.5 flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-500/[0.06] px-3 py-2 animate-fade-in">
+                <svg className="w-3.5 h-3.5 text-amber-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+                <p className="text-amber-200/80 text-xs leading-relaxed text-left">
+                  The default drumroll is timed for a 5-second countdown, so at {preferences.countdownDuration} seconds it will
+                  {preferences.countdownDuration < 5 ? ' get cut off early' : ' end before the reveal'}. For a perfect match, upload your own sound in{' '}
+                  <button
+                    onClick={() => document.getElementById('custom-audio-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                    className="text-amber-200 font-medium underline underline-offset-2 hover:text-amber-100 transition-colors"
+                  >
+                    Custom Audio
+                  </button>
+                  {' '}below.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Baby Count - Coming Soon */}
@@ -480,7 +498,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
 
           {/* Custom Audio Uploads */}
           {preferences.soundEnabled && (
-            <div>
+            <div id="custom-audio-section">
               <label className="block text-white/70 text-sm font-medium mb-3">
                 Custom Audio <span className="text-white/40">(optional, MP3 only, max 5MB)</span>
               </label>
