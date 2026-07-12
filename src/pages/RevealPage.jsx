@@ -58,6 +58,9 @@ function RevealPage() {
   const [gender, setGender] = useState(null);
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
 
+  // Sound gate state
+  const [enablingSound, setEnablingSound] = useState(false);
+
   // Password protection state
   const [passwordRequired, setPasswordRequired] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -719,8 +722,15 @@ function RevealPage() {
   // Sound Gate - show before ready when sound is enabled but not unlocked
   if (step === 'sound-gate') {
     const handleEnableSound = () => {
-      unlockAudio();
-      setStep('ready');
+      if (enablingSound) return;
+      setEnablingSound(true);
+      // Let the spinner paint before the audio unlock and the heavier
+      // ready-screen mount block the main thread on slower phones
+      setTimeout(() => {
+        unlockAudio();
+        setEnablingSound(false);
+        setStep('ready');
+      }, 50);
     };
 
     const handleContinueSilent = () => {
@@ -762,17 +772,26 @@ function RevealPage() {
             {/* Compact buttons */}
             <div className="flex gap-2">
               <button
-                className="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200"
+                className="flex-1 py-2.5 px-4 rounded-lg font-medium text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 disabled:opacity-40"
                 onClick={handleContinueSilent}
+                disabled={enablingSound}
               >
                 Skip
               </button>
               <motion.button
-                className="flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm text-amber-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:shadow-md hover:shadow-amber-400/25 transition-all duration-200"
+                className="flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm text-amber-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:shadow-md hover:shadow-amber-400/25 transition-all duration-200 disabled:opacity-80 flex items-center justify-center gap-2"
                 onClick={handleEnableSound}
+                disabled={enablingSound}
                 whileTap={{ scale: 0.97 }}
               >
-                Enable
+                {enablingSound ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-amber-950/30 border-t-amber-950 rounded-full animate-spin" />
+                    Enabling…
+                  </>
+                ) : (
+                  'Enable'
+                )}
               </motion.button>
             </div>
           </div>
