@@ -11,6 +11,7 @@ function Dashboard() {
   const navigate = useNavigate();
   const { user, status, logout, isAuthenticated, loading, refreshStatus, authError, retryAuth } = useAuth();
   const [copied, setCopied] = useState(null);
+  const [copying, setCopying] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showQR, setShowQR] = useState(null);
   const [feedback, setFeedback] = useState('');
@@ -97,6 +98,8 @@ function Dashboard() {
   };
 
   const copyToClipboard = async (text, type) => {
+    if (copying) return;
+    setCopying(type);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(type);
@@ -104,6 +107,7 @@ function Dashboard() {
       clearTimeout(copyTimer.current);
       copyTimer.current = setTimeout(() => setCopied(null), 3000);
     } catch { setFeedback('Copying is unavailable in this browser. Select and copy the link shown in the QR panel.'); setShowQR(type); }
+    finally { setCopying(null); }
   };
 
   const getLink = (type) => {
@@ -346,15 +350,16 @@ function Dashboard() {
                 They pick <span className="text-white font-medium">Boy</span> or{' '}
                 <span className="text-white font-medium">Girl</span>, and it stays secret until your big reveal.
               </p>
-              <div className="inline-flex flex-col items-stretch gap-4 max-w-full">
+              <div className="flex flex-col items-stretch gap-4 w-full max-w-md mx-auto">
               <button
-                className="group relative py-4 px-6 rounded-2xl font-bold bg-gradient-to-r from-slate-100 via-white to-slate-100 text-slate-900 shadow-lg shadow-black/20 hover:shadow-2xl hover:shadow-pink-500/20 transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] overflow-hidden"
+                type="button"
+                disabled={copying === 'doctor'}
+                className="w-full min-h-14 flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl border border-white/80 bg-white text-slate-900 font-semibold shadow-sm hover:bg-purple-50 active:bg-purple-100 transition-colors disabled:cursor-wait"
                 onClick={() => copyLink('doctor')}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-                <span className="relative flex items-center justify-center gap-2.5">
                   <svg
-                    className="w-5 h-5 text-pink-500"
+                    aria-hidden="true"
+                    className="w-5 h-5 shrink-0 text-purple-600"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -362,44 +367,21 @@ function Dashboard() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
-                    <rect width="14" height="20" x="5" y="2" rx="2.5" />
-                    <path d="M12 18h.01" />
+                    {copied === 'doctor' ? <path d="m5 12 4 4L19 6" /> : <><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" /></>}
                   </svg>
-                  <span className="text-base">{copied === 'doctor' ? 'Copied — now send it' : 'Copy Secret Keeper link'}</span>
-                  <svg
-                    className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
-                </span>
+                  <span className="text-sm sm:text-base leading-snug">{copying === 'doctor' ? 'Copying…' : copied === 'doctor' ? 'Link copied' : 'Copy Secret Keeper link'}</span>
               </button>
               <div>
                 <p className="text-white/45 text-xs text-center mb-2.5">
-                  Only send this link to the person saving the answer. Your guests get a different link.
+                  {copied === 'doctor' ? 'Now paste it into a message to your secret keeper.' : 'Only send this link to the person saving the answer. Your guests get a different link.'}
                 </p>
                 <div className="flex items-center justify-center gap-3 flex-wrap">
                 <button
                   onClick={() => window.open(getLink('doctor'), '_blank', 'noopener,noreferrer')}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 text-xs font-medium transition-all"
                 >
-                  {copied === 'doctor' ? (
-                    <>
-                      <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                      Copied
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                      Open for someone beside me
-                    </>
-                  )}
+                  <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2.5" strokeWidth="2" /><path d="M12 18h.01" strokeWidth="2" strokeLinecap="round" /></svg>
+                  Open for someone beside me
                 </button>
                 <button
                   onClick={() => setShowQR('doctor')}
@@ -426,81 +408,14 @@ function Dashboard() {
             </div>
           )}
 
-          {/* Your two links */}
+          {/* Guest invitation */}
           <div className="mb-4">
-            <h3 className="text-white font-semibold text-base">Your two links</h3>
-            <p className="text-white/45 text-sm">Both stay here the whole time. Share whichever you need.</p>
+            <h3 className="text-white font-semibold text-base">For your guests</h3>
+            <p className="text-white/45 text-sm">Share this reveal link with family and friends. They don’t need an account.</p>
           </div>
 
           {/* Code Cards */}
           <div className="grid gap-2.5 mb-8">
-            {/* Secret Keeper Code */}
-            <div className={`flex flex-wrap sm:flex-nowrap items-center gap-3 gap-y-2 bg-white/[0.06] border border-white/10 rounded-2xl p-2.5 pl-3 ${status?.isSet ? 'opacity-60' : ''}`}>
-              <span className="w-9 h-9 rounded-xl bg-pink-500/15 border border-pink-400/20 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                </svg>
-              </span>
-              <div className="flex-1 sm:flex-none sm:w-40 min-w-0">
-                <p className="text-white font-medium text-sm leading-tight truncate">The Secret Keeper</p>
-                <p className="text-white/40 text-[11px] leading-tight truncate">{status?.isSet ? 'Locked · Step 1' : 'For whoever knows · Step 1'}</p>
-              </div>
-              <div className="w-full sm:w-auto sm:flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
-                <div
-                  className={`flex-1 min-w-0 text-center bg-black/25 rounded-lg px-3 py-2 transition-all ${!status?.isSet ? 'cursor-pointer hover:bg-black/35' : ''}`}
-                  onClick={() => !status?.isSet && copyLink('doctor')}
-                >
-                  <code className="text-white/90 font-mono text-sm tracking-wider">{user.doctorCode}</code>
-                </div>
-                <button
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 flex-shrink-0 transition-all ${
-                    status?.isSet ? 'bg-white/5 text-white/40 cursor-not-allowed' : 'bg-white text-slate-900 hover:bg-white/90'
-                  }`}
-                  onClick={() => copyLink('doctor')}
-                  disabled={status?.isSet}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {copied === 'doctor' ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    )}
-                  </svg>
-                  <span className="hidden sm:inline">{copied === 'doctor' ? 'Copied' : 'Copy'}</span>
-                </button>
-                <button
-                  className={`p-2 rounded-lg flex-shrink-0 transition-all ${status?.isSet ? 'bg-white/5 text-white/40 cursor-not-allowed' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                  onClick={() => !status?.isSet && setShowQR('doctor')}
-                  disabled={status?.isSet}
-                  title="Show QR Code"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Step 2 (they pick) */}
-            <div className="flex items-center gap-3 bg-white/[0.06] border border-white/10 rounded-2xl p-2.5 pl-3">
-              <span className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-400/20 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {status?.isSet ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  )}
-                </svg>
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium text-sm leading-tight">They pick the gender</p>
-                <p className="text-white/40 text-[11px] leading-tight">{status?.isSet ? 'Locked in and hidden · Step 2' : 'Locks in automatically once they choose · Step 2'}</p>
-              </div>
-              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${status?.isSet ? 'text-emerald-300 bg-emerald-500/10' : 'text-amber-300 bg-amber-500/10'}`}>
-                {status?.isSet ? 'Locked' : 'Waiting'}
-              </span>
-            </div>
-
             {/* Reveal Code */}
             <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-2.5 pl-3">
               <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 gap-y-2">
@@ -510,18 +425,12 @@ function Dashboard() {
                   </svg>
                 </span>
                 <div className="flex-1 sm:flex-none sm:w-40 min-w-0">
-                  <p className="text-white font-medium text-sm leading-tight truncate">The Big Reveal</p>
-                  <p className="text-white/40 text-[11px] leading-tight truncate">At your party · Step 3</p>
+                  <p className="text-white font-medium text-sm leading-tight truncate">Guest reveal link</p>
+                  <p className="text-white/40 text-[11px] leading-tight truncate">Open together at your party</p>
                 </div>
                 <div className="w-full sm:w-auto sm:flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
-                  <div
-                    className="flex-1 min-w-0 text-center bg-black/25 rounded-lg px-3 py-2 cursor-pointer hover:bg-black/35 transition-all"
-                    onClick={() => copyLink('reveal')}
-                  >
-                    <code className="text-white/90 font-mono text-sm tracking-wider">{user.revealCode}</code>
-                  </div>
                   <button
-                    className="px-3 py-2 rounded-lg text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 flex items-center gap-1.5 flex-shrink-0 transition-all"
+                    className="flex-1 min-h-11 px-3 py-2 rounded-lg text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 flex items-center justify-center gap-2 transition-colors"
                     onClick={() => copyLink('reveal')}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -531,11 +440,12 @@ function Dashboard() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       )}
                     </svg>
-                    <span className="hidden sm:inline">{copied === 'reveal' ? 'Copied' : 'Copy'}</span>
+                    <span>{copied === 'reveal' ? 'Link copied' : 'Copy guest link'}</span>
                   </button>
                   <button
-                    className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 flex-shrink-0 transition-all"
+                    className="min-w-11 min-h-11 p-3 rounded-lg bg-white/10 text-white hover:bg-white/20 flex-shrink-0 transition-colors"
                     onClick={() => setShowQR('reveal')}
+                    aria-label="Show guest QR code"
                     title="Show QR Code"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -543,7 +453,7 @@ function Dashboard() {
                     </svg>
                   </button>
                   <button
-                    className={`p-2 rounded-lg flex-shrink-0 transition-all ${
+                    className={`min-w-11 min-h-11 p-3 rounded-lg flex-shrink-0 transition-colors ${
                       passwordEnabled
                         ? 'bg-emerald-500/15 text-emerald-300'
                         : showPasswordSection
@@ -564,6 +474,9 @@ function Dashboard() {
               <div className="mt-2.5 pt-2.5 border-t border-white/10 space-y-2.5">
                 {/* Reveal mode toggle (drives the single source of truth in RevealSettings) */}
                 <button
+                  role="switch"
+                  aria-label="Reveal together with guests"
+                  aria-checked={syncedReveal}
                   onClick={() => revealSettingsRef.current?.setSyncedReveal(!syncedReveal)}
                   className={`w-full flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl border transition-all ${
                     syncedReveal ? 'border-purple-500/40 bg-purple-500/10' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'
@@ -663,7 +576,7 @@ function Dashboard() {
           <div className="rounded-2xl border border-purple-400/20 bg-purple-500/10 p-5 mb-6">
             <h2 className="font-semibold mb-2">Try it before the big day</h2>
             <p className="text-white/60 text-sm mb-4">See a sample reveal. It won’t show or change your real answer.</p>
-            <div className="flex gap-3"><a className="flex-1 text-center rounded-xl border border-blue-400/25 bg-blue-500/10 text-blue-200 py-3 text-sm" href={`/reveal/${user.revealCode}?preview=true&gender=boy`} onClick={event => openPreview(event, 'boy')} target="_blank" rel="noreferrer">Boy preview ↗</a><a className="flex-1 text-center rounded-xl border border-pink-400/25 bg-pink-500/10 text-pink-200 py-3 text-sm" href={`/reveal/${user.revealCode}?preview=true&gender=girl`} onClick={event => openPreview(event, 'girl')} target="_blank" rel="noreferrer">Girl preview ↗</a></div>
+            <div className="flex gap-3"><a className="flex-1 text-center rounded-xl border border-blue-400/25 bg-blue-500/10 text-blue-200 py-3 text-sm" href={`/reveal/${user.revealCode}?preview=true&gender=boy`} onClick={event => openPreview(event, 'boy')} target="_blank" rel="noreferrer">Boy preview</a><a className="flex-1 text-center rounded-xl border border-pink-400/25 bg-pink-500/10 text-pink-200 py-3 text-sm" href={`/reveal/${user.revealCode}?preview=true&gender=girl`} onClick={event => openPreview(event, 'girl')} target="_blank" rel="noreferrer">Girl preview</a></div>
           </div>
           {/* Reveal Settings - Below code cards for better flow */}
           <div className="mb-8">
@@ -675,74 +588,6 @@ function Dashboard() {
             />
           </div>
 
-          {/* Primary action now lives in the guided next-step card at the top */}
-
-          {/* How it works / live progress */}
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-            <h3 className="text-white font-semibold text-lg mb-1">How it works</h3>
-            <p className="text-white/50 text-sm mb-5">
-              Three steps from setup to the big moment. Completed steps are checked off.
-            </p>
-            <ol>
-              {[
-                {
-                  title: 'Share the Secret Keeper link',
-                  desc: 'Send it to whoever knows the gender, or hand them your phone.',
-                  done: !!status?.isSet,
-                  active: !status?.isSet,
-                },
-                {
-                  title: 'They tap Boy or Girl',
-                  desc: "It locks in and stays hidden, even from you, until the reveal.",
-                  done: !!status?.isSet,
-                  active: false,
-                },
-                {
-                  title: 'Open The Big Reveal at your party',
-                  desc: 'A countdown, confetti, and the big moment together.',
-                  done: !!status?.isRevealed,
-                  active: !!status?.isSet && !status?.isRevealed,
-                },
-              ].map((step, i, arr) => (
-                <li key={i} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <span
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 transition-all ${
-                        step.done
-                          ? 'bg-emerald-500 text-white'
-                          : step.active
-                            ? 'bg-white text-slate-900 ring-4 ring-white/10'
-                            : 'bg-white/10 text-white/40'
-                      }`}
-                    >
-                      {step.done ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        i + 1
-                      )}
-                    </span>
-                    {i < arr.length - 1 && (
-                      <span className={`w-0.5 flex-1 min-h-[18px] my-1 rounded-full ${step.done ? 'bg-emerald-500/40' : 'bg-white/10'}`} />
-                    )}
-                  </div>
-                  <div className={`pb-5 ${step.done ? 'opacity-55' : ''}`}>
-                    <p className="text-white font-medium text-sm flex items-center gap-2">
-                      {step.title}
-                      {step.done && (
-                        <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-wider">Done</span>
-                      )}
-                      {step.active && (
-                        <span className="text-white/50 text-[10px] font-bold uppercase tracking-wider">You are here</span>
-                      )}
-                    </p>
-                    <p className="text-white/55 text-sm mt-0.5">{step.desc}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
         </div>
       </div>
 

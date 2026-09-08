@@ -148,10 +148,14 @@ function Home() {
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-[1.12] tracking-tight mb-6">Keep the secret.<span className="block mt-2 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">Share the surprise.</span></h1>
               <p className="text-white/70 text-base sm:text-lg leading-relaxed max-w-lg">A free online gender reveal. Someone you trust saves the answer in secret. You and your loved ones discover it with a countdown and a shower of confetti.</p>
               <div className="flex flex-col sm:flex-row gap-3 mt-8">
-                <button onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth')} className="bg-white text-slate-900 rounded-full py-4 px-6 font-semibold hover:bg-white/90 shadow-lg shadow-purple-500/10">{isAuthenticated ? 'Open my reveal' : 'Create my free reveal'} <span aria-hidden="true">↗</span></button>
-                <a href="#try-reveal" className="rounded-full py-4 px-6 border border-white/20 text-white/85 hover:bg-white/5 text-center">Try a demo first <span aria-hidden="true">↓</span></a>
+                <button onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth')} className="bg-white text-slate-900 rounded-full py-4 px-6 font-semibold hover:bg-white/90 shadow-lg shadow-purple-500/10">{isAuthenticated ? 'Open my reveal' : 'Create my free reveal'}</button>
+                <a href="#try-reveal" className="rounded-full py-4 px-6 border border-white/20 text-white/85 hover:bg-white/5 text-center">Try a demo first</a>
               </div>
-              <p className="text-white/50 text-xs leading-relaxed mt-4">No payment needed · Your guests don’t need an account</p>
+              <ul aria-label="Why choose Baby Reveal" className="grid grid-cols-3 gap-3 mt-6 pt-5 border-t border-white/10 text-xs leading-relaxed">
+                <li><span className="block font-semibold text-pink-200 mb-1">100% free</span><span className="text-white/55">No payment details</span></li>
+                <li><span className="block font-semibold text-purple-200 mb-1">Encrypted answer</span><span className="text-white/55">Optional guest password</span></li>
+                <li><span className="block font-semibold text-blue-200 mb-1">Easy for guests</span><span className="text-white/55">No account needed</span></li>
+              </ul>
             </div>
             <div id="try-reveal" className="scroll-mt-6 relative rounded-3xl border border-purple-300/20 bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-blue-500/10 p-6 sm:p-8 text-center shadow-2xl shadow-purple-950/20">
               <p className="text-purple-200/80 text-xs font-semibold uppercase tracking-[0.18em] mb-6">See the moment for yourself</p>
@@ -186,6 +190,7 @@ function Home() {
             <div className="divide-y divide-white/10 border-y border-white/10">
               {[
                 ['Will I accidentally see the answer?', 'Your dashboard only shows whether the answer has been saved. Send the Secret Keeper link to the person who knows, and use the separate Reveal link when you’re ready. A demo never changes your real reveal.'],
+                ['How is my reveal kept private?', 'The answer is encrypted when it is saved. Your Secret Keeper link is separate from the guest Reveal link. Keep both links with the people you invite, and add an optional guest password from your dashboard for extra protection.'],
                 ['Do I need to send an ultrasound or a medical report?', 'No. Someone who already knows the answer opens the Secret Keeper link, selects Boy or Girl, and confirms. There are no documents to upload.'],
                 ['Can family join from another place?', 'Yes. Share your Reveal link. In “Everyone reveals together” mode, you start the countdown as the signed-in host and guests watch along. In “Reveal at your own pace” mode, each guest starts their own countdown.'],
                 ['Is it really free?', 'Yes. Creating a reveal, themes, countdowns, custom music, and guest links are free. No payment details are required.'],

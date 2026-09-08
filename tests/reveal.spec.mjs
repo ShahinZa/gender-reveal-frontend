@@ -308,6 +308,15 @@ test('temporary backend failure preserves sign-in and provides a working retry',
 test('QR dialog and clipboard failure have useful feedback, and keyboard dismissal works', async ({ page, request }) => {
   const user=await create(request); await login(page,user);
   await page.goto('/dashboard');
+  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__copiedLink=text;}}}));
+  await page.getByRole('button',{name:'Copy Secret Keeper link'}).click();
+  await expect(page.getByRole('button',{name:'Link copied',exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>window.__copiedLink)).toBe(`http://127.0.0.1:3000/secret/${user.doctorCode}`);
+  await expect(page.getByRole('button',{name:'Open for someone beside me'})).toBeVisible();
+  await reviewScreenshot(page, 'copied-link');
+  await page.getByRole('button',{name:'Copy guest link'}).click();
+  expect(await page.evaluate(()=>window.__copiedLink)).toBe(`http://127.0.0.1:3000/reveal/${user.revealCode}`);
+  await expect(page.getByRole('button',{name:'Copy Secret Keeper link'})).toBeVisible();
   await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>Promise.reject(new Error('Not allowed'))}}));
   await page.getByRole('button',{name:'Copy Secret Keeper link'}).click();
   await expect(page.getByRole('status')).toContainText('Copying is unavailable');
