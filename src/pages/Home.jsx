@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCountdown, useAudio } from '../hooks';
 import { BoyGirlIcon } from '../components/GenderIcons';
 import Footer from '../components/Footer';
+import useDialog from '../hooks/useDialog';
 
 function Home() {
   const navigate = useNavigate();
@@ -17,8 +18,10 @@ function Home() {
   const [demoGender, setDemoGender] = useState(null);
   const demoActiveRef = useRef(false);
   const openingTimeoutRef = useRef(null);
+  const confettiFrameRef = useRef(null);
+  useEffect(() => () => { demoActiveRef.current = false; clearTimeout(openingTimeoutRef.current); cancelAnimationFrame(confettiFrameRef.current); confetti.reset(); }, []);
 
-  const { unlockAudio, playDrumroll, playCelebration, stopAudio } = useAudio();
+  const { unlockAudio, primeAudioPlayback, playDrumroll, playCelebration, stopAudio } = useAudio();
 
   const onDemoCountdownComplete = useCallback(() => {
     // Check if demo is still active before proceeding
@@ -45,32 +48,38 @@ function Home() {
     }
 
     confetti({
-      particleCount: 150,
+      disableForReducedMotion: true,
+      particleCount: 100,
       spread: 100,
       origin: { y: 0.6 },
       colors
     });
 
-    const duration = 5000;
+    cancelAnimationFrame(confettiFrameRef.current);
+    const duration = 3000;
     const end = Date.now() + duration;
 
     const frame = () => {
+      if (!demoActiveRef.current) return;
       confetti({
-        particleCount: 3,
+        disableForReducedMotion: true,
+        particleCount: 2,
         angle: 60,
         spread: 55,
         origin: { x: 0, y: 0.8 },
         colors
       });
+      if (!demoActiveRef.current) return;
       confetti({
-        particleCount: 3,
+        disableForReducedMotion: true,
+        particleCount: 2,
         angle: 120,
         spread: 55,
         origin: { x: 1, y: 0.8 },
         colors
       });
       if (Date.now() < end) {
-        requestAnimationFrame(frame);
+        confettiFrameRef.current = requestAnimationFrame(frame);
       }
     };
     frame();
@@ -79,6 +88,7 @@ function Home() {
   const startDemo = (gender) => {
     // Unlock audio on user gesture (required for mobile browsers)
     unlockAudio();
+    primeAudioPlayback('/drumroll.mp3', '/celebration.mp3');
     demoActiveRef.current = true;
     setDemoGender(gender);
     setDemoActive(true);
@@ -102,20 +112,20 @@ function Home() {
     setDemoStep('idle');
     setDemoGender(null);
     stopAudio();
-    // Clear any running confetti
+    cancelAnimationFrame(confettiFrameRef.current);
     confetti.reset();
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-viewport flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-viewport relative overflow-hidden">
       {/* Subtle gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900" />
 
@@ -123,298 +133,68 @@ function Home() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[800px] h-[400px] bg-purple-500/10 rounded-full blur-3xl" />
 
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex flex-col">
-        {/* Navigation */}
-        <nav className="flex justify-between items-center px-6 py-4 md:px-12 md:py-6">
-          <div className="text-white/90 font-semibold text-lg">
-            babyreveal.party
-          </div>
-          {isAuthenticated ? (
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="text-white/70 hover:text-white text-sm font-medium transition-colors"
-            >
-              Dashboard
-            </button>
-          ) : (
-            <button
-              onClick={() => navigate('/auth?mode=login')}
-              className="text-white/70 hover:text-white text-sm font-medium transition-colors"
-            >
-              Sign In
-            </button>
-          )}
+      <div className="relative z-10 min-h-viewport flex flex-col">
+        <nav aria-label="Main navigation" className="mx-auto w-full max-w-6xl flex justify-between items-center px-5 py-5 sm:px-8">
+          <a href="/" className="text-white/90 font-semibold tracking-tight">babyreveal<span className="text-pink-300">.party</span></a>
+          <button onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth?mode=login')} className="min-h-11 px-4 rounded-full border border-white/15 text-sm text-white/80 hover:bg-white/10">
+            {isAuthenticated ? 'My reveal' : 'Sign in'}
+          </button>
         </nav>
 
-        {/* Hero Section */}
-        <div className="flex-1 flex items-center justify-center px-6 py-12">
-          <div className="max-w-2xl text-center">
-            {/* Icon */}
-            <div className="mb-8 flex justify-center">
-              <BoyGirlIcon size={88} />
-            </div>
-
-            {/* Headline */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              All the magic.
-              <span className="block mt-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent leading-normal">
-                None of the risk.
-              </span>
-            </h1>
-
-            {/* Subheadline */}
-            <p className="text-lg md:text-xl text-white/60 mb-8 max-w-lg mx-auto leading-relaxed">
-              The modern gender reveal. Safe, stunning, and shareable with everyone you love.
-            </p>
-
-            {/* Why Digital - Enhanced Feature Grid */}
-            <div className="mb-12 max-w-3xl mx-auto">
-              <p className="text-white/40 text-xs uppercase tracking-widest text-center mb-6">
-                Why families choose digital
-              </p>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Encrypted */}
-                <div className="group relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/10 hover:border-purple-400/30 transition-all duration-300 hover:scale-[1.02] text-center">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 mx-auto">
-                    <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                  <h2 className="text-white font-semibold text-sm mb-1">Encrypted</h2>
-                  <p className="text-white/50 text-xs leading-relaxed">Secret stays hidden until you're ready</p>
-                </div>
-
-                {/* Eco-friendly */}
-                <div className="group relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/10 hover:border-emerald-400/30 transition-all duration-300 hover:scale-[1.02] text-center">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 mx-auto">
-                    <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </div>
-                  <h2 className="text-white font-semibold text-sm mb-1">Zero waste</h2>
-                  <p className="text-white/50 text-xs leading-relaxed">No balloons, plastic, or cleanup needed</p>
-                </div>
-
-                {/* Safe */}
-                <div className="group relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/10 hover:border-orange-400/30 transition-all duration-300 hover:scale-[1.02] text-center">
-                  <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 mx-auto">
-                    <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                  </div>
-                  <h2 className="text-white font-semibold text-sm mb-1">100% safe</h2>
-                  <p className="text-white/50 text-xs leading-relaxed">No pyrotechnics, smoke, or fire hazards</p>
-                </div>
-
-                {/* Share anywhere */}
-                <div className="group relative bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/10 hover:border-blue-400/30 transition-all duration-300 hover:scale-[1.02] text-center">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 mx-auto">
-                    <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <h2 className="text-white font-semibold text-sm mb-1">Include everyone</h2>
-                  <p className="text-white/50 text-xs leading-relaxed">Family abroad joins live via link</p>
-                </div>
+        <main className="flex-1">
+          <section className="max-w-6xl mx-auto px-5 sm:px-8 pt-10 pb-14 md:pt-16 md:pb-20 grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+            <div>
+              <p className="inline-flex items-center gap-2 text-xs font-medium text-purple-200 border border-purple-400/25 bg-purple-500/10 rounded-full px-3 py-2 mb-6"><span className="w-1.5 h-1.5 rounded-full bg-pink-300" /> A little secret. A moment for everyone.</p>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-[1.12] tracking-tight mb-6">Keep the secret.<span className="block mt-2 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">Share the surprise.</span></h1>
+              <p className="text-white/70 text-base sm:text-lg leading-relaxed max-w-lg">A free online gender reveal. Someone you trust saves the answer in secret. You and your loved ones discover it with a countdown and a shower of confetti.</p>
+              <div className="flex flex-col sm:flex-row gap-3 mt-8">
+                <button onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth')} className="bg-white text-slate-900 rounded-full py-4 px-6 font-semibold hover:bg-white/90 shadow-lg shadow-purple-500/10">{isAuthenticated ? 'Open my reveal' : 'Create my free reveal'} <span aria-hidden="true">↗</span></button>
+                <a href="#try-reveal" className="rounded-full py-4 px-6 border border-white/20 text-white/85 hover:bg-white/5 text-center">Try a demo first <span aria-hidden="true">↓</span></a>
               </div>
+              <p className="text-white/50 text-xs leading-relaxed mt-4">No payment needed · Your guests don’t need an account</p>
             </div>
-
-            {/* CTA Buttons */}
-            <div className="mb-16">
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {isAuthenticated ? (
-                  <button
-                    className="bg-white text-slate-900 font-semibold py-4 px-8 rounded-full hover:bg-white/90 transition-all duration-200 shadow-lg shadow-white/10"
-                    onClick={() => navigate('/dashboard')}
-                  >
-                    Go to Dashboard
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      className="bg-white text-slate-900 font-semibold py-4 px-8 rounded-full hover:bg-white/90 transition-all duration-200 shadow-lg shadow-white/10"
-                      onClick={() => navigate('/auth')}
-                    >
-                      Get Started Free
-                    </button>
-                    <button
-                      className="text-white/80 font-medium py-4 px-8 rounded-full border border-white/20 hover:bg-white/5 hover:border-white/30 transition-all duration-200"
-                      onClick={() => navigate('/auth?mode=login')}
-                    >
-                      I have an account
-                    </button>
-                  </>
-                )}
+            <div id="try-reveal" className="scroll-mt-6 relative rounded-3xl border border-purple-300/20 bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-blue-500/10 p-6 sm:p-8 text-center shadow-2xl shadow-purple-950/20">
+              <p className="text-purple-200/80 text-xs font-semibold uppercase tracking-[0.18em] mb-6">See the moment for yourself</p>
+              <div className="flex justify-center mb-5"><BoyGirlIcon size={100} /></div>
+              <h2 className="text-2xl font-semibold mb-2">A small preview of the big reveal</h2>
+              <p className="text-white/60 text-sm leading-relaxed max-w-xs mx-auto">Pick a demo below. You’ll see the countdown, balloons, and celebration.</p>
+              <div className="grid grid-cols-2 gap-3 mt-6">
+                <button onClick={() => startDemo('boy')} className="min-h-20 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 py-4 px-3 text-blue-200 font-medium"><span aria-hidden="true" className="block text-3xl mb-2">👦</span>Try boy demo</button>
+                <button onClick={() => startDemo('girl')} className="min-h-20 rounded-2xl border border-pink-400/30 bg-pink-500/10 hover:bg-pink-500/20 py-4 px-3 text-pink-200 font-medium"><span aria-hidden="true" className="block text-3xl mb-2">👧</span>Try girl demo</button>
               </div>
+              <p className="text-white/45 text-xs mt-4">Just a demo. It won’t create or reveal your own surprise.</p>
             </div>
+          </section>
 
-            {/* Our Promise */}
-            <div className="mb-16 max-w-2xl mx-auto">
-              <p className="text-white/40 text-xs uppercase tracking-widest text-center mb-6">
-                Our promise to you
-              </p>
-              <div className="relative rounded-2xl bg-gradient-to-r from-emerald-500/10 via-transparent to-emerald-500/10 border border-emerald-400/20">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent rounded-2xl" />
-                <div className="relative px-6 py-5 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10">
-                  {/* Free Forever */}
-                  <div className="group/free relative cursor-default">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 group-hover/free:bg-emerald-500/30 transition-colors duration-300">
-                        <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-white font-medium text-sm flex items-center gap-1.5">
-                          100% Free Forever
-                          <svg className="w-3.5 h-3.5 text-white/30 group-hover/free:text-emerald-400 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </p>
-                        <p className="text-white/40 text-xs">No hidden costs</p>
-                      </div>
-                    </div>
-                    {/* Hover Popover */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-72 opacity-0 invisible group-hover/free:opacity-100 group-hover/free:visible transition-all duration-300 z-50 pointer-events-none group-hover/free:pointer-events-auto">
-                      <div className="relative bg-slate-800/95 backdrop-blur-xl rounded-xl p-4 border border-emerald-500/20 shadow-xl shadow-black/20">
-                        {/* Arrow */}
-                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-800/95 border-l border-t border-emerald-500/20 rotate-45" />
-                        <p className="text-white/80 text-sm leading-relaxed relative">
-                          We built this for our own gender reveal and loved it so much, we decided to share it with the world. Completely free, forever.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="hidden sm:block w-px h-10 bg-white/10" />
-
-                  {/* Privacy */}
-                  <div className="group/privacy relative cursor-default">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 group-hover/privacy:bg-emerald-500/30 transition-colors duration-300">
-                        <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-white font-medium text-sm flex items-center gap-1.5">
-                          Private by Design
-                          <svg className="w-3.5 h-3.5 text-white/30 group-hover/privacy:text-emerald-400 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </p>
-                        <p className="text-white/40 text-xs">No tracking or data sales</p>
-                      </div>
-                    </div>
-                    {/* Hover Popover */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-72 opacity-0 invisible group-hover/privacy:opacity-100 group-hover/privacy:visible transition-all duration-300 z-50 pointer-events-none group-hover/privacy:pointer-events-auto">
-                      <div className="relative bg-slate-800/95 backdrop-blur-xl rounded-xl p-4 border border-emerald-500/20 shadow-xl shadow-black/20">
-                        {/* Arrow */}
-                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-800/95 border-l border-t border-emerald-500/20 rotate-45" />
-                        <p className="text-white/80 text-sm leading-relaxed relative">
-                          Built by a Computer Science PhD researcher who genuinely cares about privacy. Your moments are yours alone. Never tracked, analyzed, or sold.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* How it works */}
-            <div className="mb-16">
-              <p className="text-white/40 text-xs uppercase tracking-widest text-center mb-10">
-                How it works
-              </p>
-              <div className="flex flex-col md:flex-row md:items-start md:justify-center gap-10 md:gap-0 max-w-4xl mx-auto">
+          <section aria-labelledby="how-heading" className="border-y border-white/10 bg-white/[0.02]">
+            <div className="max-w-6xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+              <p className="text-purple-300 text-xs uppercase tracking-[0.18em] font-semibold mb-3">From secret to celebration</p>
+              <h2 id="how-heading" className="text-2xl sm:text-3xl font-semibold mb-3">Three steps. One unforgettable moment.</h2>
+              <p className="text-white/60 mb-8">You don’t need to know the answer. That’s the whole idea.</p>
+              <ol className="grid md:grid-cols-3 gap-5">
                 {[
-                  {
-                    badge: 'from-pink-500/25 to-pink-500/5 border-pink-400/30',
-                    icon: 'text-pink-300',
-                    glow: 'bg-pink-500/25',
-                    line: 'from-pink-400/50 to-purple-400/40',
-                    path: 'M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244',
-                    title: 'Sign up',
-                    desc: 'Create an account and get your two private links.',
-                  },
-                  {
-                    badge: 'from-purple-500/25 to-purple-500/5 border-purple-400/30',
-                    icon: 'text-purple-200',
-                    glow: 'bg-purple-500/25',
-                    line: 'from-purple-400/50 to-emerald-400/40',
-                    path: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z',
-                    title: 'Someone picks',
-                    desc: 'Send a link or hand your phone to whoever knows. They tap Boy or Girl, and it stays secret.',
-                  },
-                  {
-                    badge: 'from-emerald-500/25 to-emerald-500/5 border-emerald-400/30',
-                    icon: 'text-emerald-300',
-                    glow: 'bg-emerald-500/25',
-                    line: '',
-                    path: 'M12 8v13m0-13V6a2 2 0 112-2h.01L12 8zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7',
-                    title: 'Reveal together',
-                    desc: 'Open your Reveal link at the party and find out together!',
-                  },
-                ].map((s, i, arr) => (
-                  <React.Fragment key={i}>
-                    <div className="flex-1 flex flex-col items-center text-center px-4">
-                      <div className="relative mb-5">
-                        <div className={`absolute inset-0 rounded-2xl ${s.glow} blur-lg opacity-70`} />
-                        <div className={`relative w-16 h-16 rounded-2xl bg-gradient-to-br ${s.badge} border flex items-center justify-center`}>
-                          <svg className={`w-7 h-7 ${s.icon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={s.path} />
-                          </svg>
-                        </div>
-                      </div>
-                      <span className="text-white/30 text-[11px] font-bold uppercase tracking-widest mb-2">Step {i + 1}</span>
-                      <h3 className="text-white font-semibold text-lg mb-1.5">{s.title}</h3>
-                      <p className="text-white/50 text-sm leading-relaxed max-w-[15rem]">{s.desc}</p>
-                    </div>
-                    {i < arr.length - 1 && (
-                      <div className={`hidden md:block flex-shrink-0 w-16 h-px mt-8 bg-gradient-to-r ${s.line}`} />
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
+                  ['Create your reveal', 'Sign up for free. Your dashboard gives you two different links: one to save the secret, one to reveal it.'],
+                  ['Send the Secret Keeper link', 'Copy it and send it to your doctor, a friend, or anyone who knows the answer. They choose Boy or Girl and confirm. It stays hidden from you.'],
+                  ['Gather everyone. Reveal!', 'Open your Reveal link at the party. Share it with family joining remotely, choose how everyone watches, and enjoy the countdown together.'],
+                ].map(([title, description], i) => <li key={title} className="rounded-2xl border border-white/10 bg-slate-900/40 p-6"><span className="inline-flex w-8 h-8 rounded-full bg-purple-500/15 border border-purple-400/25 text-purple-200 items-center justify-center text-sm mb-5">{i + 1}</span><h3 className="font-semibold text-lg mb-3">{title}</h3><p className="text-white/60 text-sm leading-relaxed">{description}</p></li>)}
+              </ol>
             </div>
+          </section>
 
-            {/* Demo Section */}
-            <div className="mt-20 pt-12 border-t border-white/10">
-              <p className="text-white/40 text-xs uppercase tracking-widest text-center mb-6">
-                Try it now
-              </p>
-
-              <div className="flex gap-4 justify-center items-center mb-8">
-                <button
-                  onClick={() => startDemo('boy')}
-                  className="group w-28 h-28 rounded-2xl bg-blue-500/10 border border-blue-400/20 hover:border-blue-400/50 hover:bg-blue-500/20 transition-all duration-300 hover:scale-105 flex flex-col items-center justify-center gap-2"
-                >
-                  <span className="text-4xl group-hover:scale-110 transition-transform">👦</span>
-                  <span className="text-blue-300 text-sm font-medium">Boy</span>
-                </button>
-
-                <button
-                  onClick={() => startDemo('girl')}
-                  className="group w-28 h-28 rounded-2xl bg-pink-500/10 border border-pink-400/20 hover:border-pink-400/50 hover:bg-pink-500/20 transition-all duration-300 hover:scale-105 flex flex-col items-center justify-center gap-2"
-                >
-                  <span className="text-4xl group-hover:scale-110 transition-transform">👧</span>
-                  <span className="text-pink-300 text-sm font-medium">Girl</span>
-                </button>
-              </div>
-
-              <p className="text-center text-white/40 text-sm mb-2">
-                Customize themes, emojis, sounds & more after signup
-              </p>
-              <div className="flex justify-center">
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/40 text-xs">
-                  Twins & triplets
-                  <span className="text-amber-300/80 font-semibold uppercase tracking-wide text-[10px]">Coming soon</span>
-                </span>
-              </div>
+          <section className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16" aria-labelledby="questions-heading">
+            <h2 id="questions-heading" className="text-2xl sm:text-3xl font-semibold mb-7">A few things you might be wondering</h2>
+            <div className="divide-y divide-white/10 border-y border-white/10">
+              {[
+                ['Will I accidentally see the answer?', 'Your dashboard only shows whether the answer has been saved. Send the Secret Keeper link to the person who knows, and use the separate Reveal link when you’re ready. A demo never changes your real reveal.'],
+                ['Do I need to send an ultrasound or a medical report?', 'No. Someone who already knows the answer opens the Secret Keeper link, selects Boy or Girl, and confirms. There are no documents to upload.'],
+                ['Can family join from another place?', 'Yes. Share your Reveal link. In “Everyone reveals together” mode, you start the countdown as the signed-in host and guests watch along. In “Reveal at your own pace” mode, each guest starts their own countdown.'],
+                ['Is it really free?', 'Yes. Creating a reveal, themes, countdowns, custom music, and guest links are free. No payment details are required.'],
+                ['Can the answer be changed?', 'The Secret Keeper confirms the choice before it locks. Once confirmed, it cannot be changed, so ask them to double-check.'],
+              ].map(([question, answer]) => <details key={question} className="group py-5"><summary className="cursor-pointer font-medium text-white/90 min-h-6">{question}</summary><p className="mt-3 text-white/60 text-sm leading-relaxed max-w-2xl">{answer}</p></details>)}
             </div>
-          </div>
-        </div>
+            <div className="text-center mt-12"><h2 className="text-2xl font-semibold mb-3">Your surprise starts here.</h2><p className="text-white/60 text-sm mb-6">Create your reveal. We’ll guide you through the next step.</p><button onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth')} className="bg-white text-slate-900 rounded-full py-4 px-7 font-semibold hover:bg-white/90">{isAuthenticated ? 'Open my reveal' : 'Create my free reveal'}</button></div>
+          </section>
+        </main>
 
         {/* Footer */}
         <Footer />
@@ -438,6 +218,11 @@ function Home() {
 
 // Demo Overlay Component
 function DemoOverlay({ step, gender, count, onClose, onMoreConfetti }) {
+  const dialogRef = useRef(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const close = useCallback(() => closeRef.current(), []);
+  useDialog(dialogRef, true, close);
   const isBoy = gender === 'boy';
 
   // Balloon colors
@@ -470,13 +255,14 @@ function DemoOverlay({ step, gender, count, onClose, onMoreConfetti }) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-50"
+      ref={dialogRef} role="dialog" aria-modal="true" aria-label="Reveal demo" className="fixed inset-0 z-50 overflow-y-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       {/* Close button */}
       <button
+        aria-label="Close demo"
         onClick={onClose}
         className="absolute top-4 right-4 z-50 text-white/60 hover:text-white bg-black/20 hover:bg-black/40 rounded-full p-2 transition-all"
       >
@@ -492,7 +278,7 @@ function DemoOverlay({ step, gender, count, onClose, onMoreConfetti }) {
 
       {/* Countdown */}
       {step === 'countdown' && (
-        <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
+        <div className="min-h-viewport relative overflow-hidden flex items-center justify-center">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-slate-800 to-slate-900" />
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
@@ -515,7 +301,7 @@ function DemoOverlay({ step, gender, count, onClose, onMoreConfetti }) {
 
       {/* Opening animation - flying balloons */}
       {step === 'opening' && (
-        <div className={`min-h-screen w-full fixed inset-0 overflow-hidden ${
+        <div className={`min-h-viewport w-full fixed inset-0 overflow-hidden ${
           isBoy
             ? 'bg-gradient-to-b from-blue-500 via-blue-600 to-blue-900'
             : 'bg-gradient-to-b from-pink-400 via-pink-600 to-pink-900'
@@ -656,7 +442,7 @@ function DemoOverlay({ step, gender, count, onClose, onMoreConfetti }) {
 
       {/* Final reveal */}
       {step === 'reveal' && (
-        <div className={`min-h-screen relative overflow-hidden flex items-center justify-center ${
+        <div className={`min-h-viewport relative overflow-hidden flex items-center justify-center ${
           isBoy ? 'bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-900' : 'bg-gradient-to-br from-pink-900 via-pink-800 to-rose-900'
         }`}>
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -665,7 +451,7 @@ function DemoOverlay({ step, gender, count, onClose, onMoreConfetti }) {
             <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[600px] h-[600px] ${isBoy ? 'bg-blue-500/20' : 'bg-pink-500/20'} rounded-full blur-3xl`} />
           </div>
 
-          <div className="relative z-10 text-center">
+          <div className="relative z-10 text-center px-4 py-20">
             <motion.p
               className={`text-2xl md:text-3xl font-medium mb-4 ${isBoy ? 'text-blue-200' : 'text-pink-200'}`}
               initial={{ opacity: 0, y: 20 }}

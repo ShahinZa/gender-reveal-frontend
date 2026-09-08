@@ -18,6 +18,8 @@ function DoctorPage() {
   }, [code]);
 
   const checkStatus = async () => {
+    setStep('loading');
+    setError('');
     try {
       const data = await genderService.getStatusByCode(code);
 
@@ -126,7 +128,7 @@ function DoctorPage() {
     const girlEmojis = Array(babyCount).fill('👧').join('');
 
     return (
-      <div className="h-screen relative overflow-hidden flex items-center justify-center px-4">
+      <div className="min-h-viewport relative flex items-center justify-center px-4 py-8">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[600px] h-[300px] bg-purple-500/10 rounded-full blur-3xl" />
 
@@ -178,7 +180,7 @@ function DoctorPage() {
 
           {/* Note */}
           <p className="text-white/40 text-sm max-w-xs mx-auto leading-relaxed">
-            Tap once to lock it in. They won't see your choice, it stays secret until the reveal.
+            Choose an option, then double-check and confirm. They won't see your choice, it stays secret until the reveal.
           </p>
         </div>
       </div>

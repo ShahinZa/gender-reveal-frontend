@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { setRevealAccess } from './revealAccess';
 
 /**
  * Auth Service
@@ -131,7 +132,9 @@ const authService = {
    * @param {string} password - Password to verify
    */
   async verifyRevealPassword(revealCode, password) {
-    return apiClient.post('/api/auth/verify-reveal-password', { revealCode, password }, false);
+    const data = await apiClient.post('/api/auth/verify-reveal-password', { revealCode, password }, false);
+    if (data.valid && data.accessToken) setRevealAccess(revealCode, data.accessToken);
+    return data;
   },
 };
 

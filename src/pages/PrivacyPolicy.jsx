@@ -176,11 +176,11 @@ function PrivacyPolicy() {
               </p>
               <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                 <p className="text-white font-medium text-center">
-                  All reveal data is automatically and permanently deleted 60 days after the reveal
+                  The saved gender result is automatically deleted 60 days after the reveal
                 </p>
               </div>
               <p className="text-white/50 text-sm mt-4">
-                This includes the encrypted gender selection and associated reveal codes. Account information (email) is retained for continued account access unless you request account deletion.
+                This covers the encrypted gender selection and its reveal timestamps. Your account, private links, preferences, and uploaded audio remain available for continued account access unless you request account deletion.
               </p>
             </section>
 

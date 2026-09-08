@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input, Card, Alert } from '../components/common';
 
@@ -16,7 +16,8 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   // Get redirect URL from query params
-  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  const requestedRedirect = searchParams.get('redirect');
+  const redirectUrl = requestedRedirect?.startsWith('/') && !requestedRedirect.startsWith('//') && !requestedRedirect.includes('\\') ? requestedRedirect : '/dashboard';
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -26,6 +27,7 @@ function AuthPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
     setLoading(true);
 
@@ -34,9 +36,9 @@ function AuthPage() {
         if (password !== confirmPassword) {
           throw new Error('Passwords do not match');
         }
-        await register(email, password);
+        await register(email.trim(), password);
       } else {
-        await login(email, password);
+        await login(email.trim(), password);
       }
       navigate(redirectUrl);
     } catch (err) {
@@ -54,37 +56,19 @@ function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
-      {/* Animated Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-3xl" />
-      </div>
-
-      {/* Main Card */}
-      <div className="relative z-10 w-full max-w-md">
-        <Card className="!p-6">
-          {/* Back Button */}
-          <button
-            className="absolute top-6 left-6 text-white/60 hover:text-white transition-colors flex items-center gap-2 text-sm"
-            onClick={() => navigate('/')}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-
+    <main className="min-h-viewport flex items-center justify-center px-5 py-8" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(88,28,135,0.16), transparent 65%), #0f172a' }}>
+      <div className="w-full max-w-sm">
+        <Link to="/" className="inline-flex items-center min-h-11 text-sm text-white/60 hover:text-white mb-5">← babyreveal.party</Link>
+        <div className="rounded-2xl border border-white/10 bg-slate-900 px-5 py-6 sm:p-7">
           {/* Title */}
-          <h1 className="text-2xl font-bold text-white text-center mb-1 mt-9">
-            {mode === 'register' ? 'Create Account' : 'Welcome Back'}
+          <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">
+            {mode === 'register' ? 'Create your free reveal' : 'Welcome back'}
           </h1>
 
           {/* Subtitle */}
-          <p className="text-white/55 text-sm text-center mb-5">
+          <p className="text-white/60 text-sm leading-relaxed mb-6">
             {mode === 'register'
-              ? 'Start your gender reveal journey'
+              ? 'Get your private links, then send one to someone who knows the answer.'
               : 'Sign in to your account'}
           </p>
 
@@ -97,8 +81,10 @@ function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               required
-              autoFocus
               autoComplete="email"
+              name="email"
+              autoCapitalize="none"
+              spellCheck={false}
             />
 
             <Input
@@ -110,7 +96,7 @@ function AuthPage() {
               required
               minLength={6}
               autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-              hint={mode === 'register' ? 'Use at least 6 characters.' : undefined}
+              hint={mode === 'register' ? 'At least 6 characters. Save it somewhere safe.' : undefined}
             />
 
             {mode === 'register' && (
@@ -135,7 +121,7 @@ function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 bg-white text-slate-900 font-semibold py-3.5 px-8 rounded-xl hover:bg-white/90 transition-all duration-200 shadow-lg shadow-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-2 bg-white text-slate-900 font-semibold py-3.5 px-8 rounded-xl hover:bg-white/90 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="inline-flex items-center gap-2">
@@ -143,30 +129,24 @@ function AuthPage() {
                   Loading...
                 </span>
               ) : (
-                mode === 'register' ? 'Create Account' : 'Sign In'
+                mode === 'register' ? 'Create my reveal' : 'Sign in'
               )}
             </button>
           </form>
 
           {/* Privacy Note - only show on register */}
           {mode === 'register' && (
-            <p className="text-white/30 text-[11px] text-center mt-3.5 leading-relaxed">
-              We only use your email to sign in. Password recovery is not supported.
+            <p className="text-white/50 text-xs mt-4 leading-relaxed">
+              No payment details needed. Please save your password; password reset isn’t available yet.
               <br />
               By signing up, you agree to our{' '}
-              <span
-                onClick={() => navigate('/privacy')}
-                className="underline cursor-pointer hover:text-white/50"
-              >
+              <Link to="/privacy" className="underline hover:text-white">
                 Privacy Policy
-              </span>
+              </Link>
               {' '}and{' '}
-              <span
-                onClick={() => navigate('/disclaimer')}
-                className="underline cursor-pointer hover:text-white/50"
-              >
+              <Link to="/disclaimer" className="underline hover:text-white">
                 Terms of Service
-              </span>.
+              </Link>.
             </p>
           )}
 
@@ -180,13 +160,14 @@ function AuthPage() {
             <button
               className="text-purple-400 hover:text-purple-300 font-medium mt-1 transition-colors"
               onClick={toggleMode}
+              disabled={loading}
             >
               {mode === 'register' ? 'Sign In' : 'Create Account'}
             </button>
           </div>
-        </Card>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
 

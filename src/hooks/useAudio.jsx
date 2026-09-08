@@ -1,347 +1,120 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 
-// Global state (persists across renders and component instances)
-let audioContext = null;
-let audioUnlocked = false;
+// Keep media elements per page. Sharing preload flags across pages skipped
+// loading audio into the new page's elements, especially after a preview.
+export default function useAudio() {
+  const elements = useRef({});
+  const unlocked = useRef(false);
+  const timers = useRef(new Set());
+  const context = useRef(null);
+  const [isAudioUnlocked, setUnlocked] = useState(false);
+  const [status, setStatus] = useState({ countdown: 'idle', celebration: 'idle' });
 
-// Global preload tracking - tracks current target URL and completion
-const preloadState = {
-  drumroll: { url: null, targetUrl: null, done: false },
-  celebration: { url: null, targetUrl: null, done: false },
-};
-
-/**
- * Get auth token for API requests
- */
-const getAuthToken = () => localStorage.getItem('token');
-
-/**
- * Fetch audio with auth header for API URLs
- * Custom audio from /api/audio/{code}/{type} requires auth token
- */
-const fetchAudio = async (url) => {
-  const isApiUrl = url.includes('/api/');
-  const token = getAuthToken();
-
-  const headers = {};
-  if (isApiUrl && token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return fetch(url, { headers });
-};
-
-const useAudio = () => {
-  const drumrollRef = useRef(null);
-  const celebrationRef = useRef(null);
-  const drumrollTimerRef = useRef(null);
-
-  const [drumrollStatus, setDrumrollStatus] = useState('idle');
-  const [celebrationStatus, setCelebrationStatus] = useState('idle');
-  const [isAudioUnlocked, setIsAudioUnlocked] = useState(audioUnlocked);
-
-  const unlockAudio = useCallback(() => {
-    if (audioUnlocked) return true;
-
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!audioContext) audioContext = new AudioContextClass();
-      if (audioContext.state === 'suspended') audioContext.resume();
-
-      const buffer = audioContext.createBuffer(1, 1, 22050);
-      const source = audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContext.destination);
-      source.start(0);
-
-      const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
-      silentAudio.volume = 0;
-      silentAudio.play().catch(() => {});
-
-      audioUnlocked = true;
-      setIsAudioUnlocked(true);
-      console.log('Audio unlocked successfully');
-      return true;
-    } catch (error) {
-      console.log('Audio unlock failed:', error.message);
-      return false;
-    }
-  }, []);
-
-  const ensureElement = useCallback((ref, fallbackSrc) => {
-    if (!ref.current) {
-      const audio = new Audio();
-      audio.crossOrigin = 'anonymous';
+  const ensure = useCallback((type, url) => {
+    const src = url || (type === 'countdown' ? '/drumroll.mp3' : '/celebration.mp3');
+    let audio = elements.current[type];
+    if (!audio) {
+      audio = new Audio();
       audio.preload = 'auto';
       audio.volume = 0.8;
-      audio.src = fallbackSrc;
-      ref.current = audio;
+      elements.current[type] = audio;
+      audio.addEventListener('canplay', () => elements.current[type] === audio && setStatus(prev => ({ ...prev, [type]: audio.dataset.fallback === 'true' ? 'fallback' : 'ready' })));
+      audio.addEventListener('error', () => {
+        if (elements.current[type] !== audio) return;
+        const fallback = type === 'countdown' ? '/drumroll.mp3' : '/celebration.mp3';
+        if (audio.dataset.source !== fallback && audio.dataset.fallback !== 'true') {
+          audio.dataset.fallback = 'true';
+          audio.src = fallback;
+          audio.load();
+          if (audio.dataset.playing === 'true') audio.play().catch(() => setStatus(prev => ({ ...prev, [type]: 'error' })));
+        } else setStatus(prev => ({ ...prev, [type]: 'error' }));
+      });
     }
-    return ref.current;
+    if (audio.dataset.source !== src) {
+      audio.dataset.source = src;
+      audio.dataset.fallback = 'false';
+      audio.src = src;
+      setStatus(prev => ({ ...prev, [type]: 'loading' }));
+      audio.load();
+    }
+    return audio;
   }, []);
 
-  // Mobile browsers only allow play() calls that trace back to a user
-  // gesture, and the reveal plays audio from timer/socket callbacks.
-  // Call this from inside a tap handler: a muted play/pause blesses the
-  // real elements so the later audible play() is allowed.
+  const unlockAudio = useCallback(() => {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        context.current ||= new AudioContextClass();
+        context.current.resume().catch(() => {});
+      }
+      unlocked.current = true;
+      setUnlocked(true);
+      return true;
+    } catch { return false; }
+  }, []);
+
+  // Prime the actual elements on a gesture, before any request or timer.
   const primeAudioPlayback = useCallback((countdownUrl, celebrationUrl) => {
-    [
-      [drumrollRef, countdownUrl || '/drumroll.mp3'],
-      [celebrationRef, celebrationUrl || '/celebration.mp3'],
-    ].forEach(([ref, src]) => {
-      try {
-        const el = ensureElement(ref, src);
-        if (el.dataset.primed === 'true') return;
-        el.muted = true;
-        const p = el.play();
-        if (p && p.then) {
-          p.then(() => {
-            el.pause();
-            el.currentTime = 0;
-            el.muted = false;
-            el.dataset.primed = 'true';
-          }).catch(() => {
-            el.muted = false;
-          });
-        }
-      } catch {
-        // Audio not supported
-      }
-    });
-  }, [ensureElement]);
-
-  const preloadDrumroll = useCallback(async (audioUrl) => {
-    if (!audioUrl) return;
-
-    // If this exact URL is already loaded successfully, skip
-    if (preloadState.drumroll.done && preloadState.drumroll.url === audioUrl) {
-      console.log('Drumroll already loaded for URL:', audioUrl);
-      return;
+    for (const [type, url] of [['countdown', countdownUrl], ['celebration', celebrationUrl]]) {
+      const audio = ensure(type, url);
+      if (audio.dataset.primed === 'true' || audio.dataset.playing === 'true') continue;
+      audio.muted = true;
+      audio.play().then(() => {
+        // A slow play promise must not pause the real countdown that started
+        // while priming was pending.
+        if (audio.dataset.playing !== 'true') { audio.pause(); audio.currentTime = 0; }
+        audio.muted = false;
+        audio.dataset.primed = 'true';
+      }).catch(() => { audio.muted = false; });
     }
+  }, [ensure]);
 
-    // Update target URL - this is what we WANT to have loaded
-    // If a different URL was loading, this new URL takes priority
-    preloadState.drumroll.targetUrl = audioUrl;
-
-    console.log('Preloading drumroll:', audioUrl);
-    setDrumrollStatus('loading');
-
-    try {
-      const response = await fetchAudio(audioUrl);
-      console.log('Drumroll response:', response.status, response.headers.get('content-type'));
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const contentType = response.headers.get('content-type') || '';
-      if (!contentType.includes('audio')) {
-        throw new Error(`Invalid type: ${contentType}`);
-      }
-
-      const blob = await response.blob();
-      if (blob.size === 0) throw new Error('Empty response');
-
-      // Check if this URL is still the target (not superseded by a newer request)
-      if (preloadState.drumroll.targetUrl !== audioUrl) {
-        console.log('Drumroll preload superseded by newer request, discarding:', audioUrl);
-        return;
-      }
-
-      const blobUrl = URL.createObjectURL(blob);
-      // Reuse the existing element: replacing it would lose the
-      // user-gesture blessing granted by primeAudioPlayback on mobile
-      const audio = drumrollRef.current || new Audio();
-      audio.volume = 0.8;
-      audio.src = blobUrl;
-
-      await new Promise((resolve, reject) => {
-        audio.addEventListener('canplaythrough', resolve, { once: true });
-        audio.addEventListener('error', () => reject(new Error('Decode failed')), { once: true });
-        audio.load();
-      });
-
-      // Double-check target URL hasn't changed during audio load
-      if (preloadState.drumroll.targetUrl !== audioUrl) {
-        console.log('Drumroll preload superseded during load, discarding:', audioUrl);
-        URL.revokeObjectURL(blobUrl);
-        return;
-      }
-
-      drumrollRef.current = audio;
-      preloadState.drumroll.url = audioUrl;
-      preloadState.drumroll.done = true;
-      setDrumrollStatus('ready');
-      console.log('Drumroll preload complete:', audioUrl);
-    } catch (error) {
-      console.log('Drumroll preload failed:', error.message);
-      // Only set error if this is still the target URL
-      if (preloadState.drumroll.targetUrl === audioUrl) {
-        setDrumrollStatus('error');
-      }
+  const play = useCallback((type, url, duration) => {
+    const audio = ensure(type, url);
+    audio.dataset.playing = 'true';
+    audio.muted = false;
+    audio.currentTime = 0;
+    if (type === 'countdown') {
+      // Fit the built-in drumroll to 3/5/10 seconds. Custom songs retain their
+      // speed and loop until the countdown ends.
+      const adjustRate = () => {
+        audio.playbackRate = audio.dataset.source === '/drumroll.mp3' && duration && Number.isFinite(audio.duration) ? Math.min(4, Math.max(0.25, audio.duration / duration)) : 1;
+      };
+      adjustRate();
+      audio.addEventListener('loadedmetadata', adjustRate, { once: true });
+      audio.loop = true;
     }
-  }, []);
-
-  const preloadCelebration = useCallback(async (audioUrl) => {
-    if (!audioUrl) return;
-
-    // If this exact URL is already loaded successfully, skip
-    if (preloadState.celebration.done && preloadState.celebration.url === audioUrl) {
-      console.log('Celebration already loaded for URL:', audioUrl);
-      return;
+    if (!unlocked.current) return;
+    audio.play().catch(() => setStatus(prev => ({ ...prev, [type]: 'error' })));
+    if (duration) {
+      const timer = setTimeout(() => { audio.pause(); audio.dataset.playing = 'false'; timers.current.delete(timer); }, duration * 1000 + 100);
+      timers.current.add(timer);
     }
-
-    // Update target URL - this is what we WANT to have loaded
-    // If a different URL was loading, this new URL takes priority
-    preloadState.celebration.targetUrl = audioUrl;
-
-    console.log('Preloading celebration:', audioUrl);
-    setCelebrationStatus('loading');
-
-    try {
-      const response = await fetchAudio(audioUrl);
-      console.log('Celebration response:', response.status, response.headers.get('content-type'));
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const contentType = response.headers.get('content-type') || '';
-      if (!contentType.includes('audio')) {
-        throw new Error(`Invalid type: ${contentType}`);
-      }
-
-      const blob = await response.blob();
-      if (blob.size === 0) throw new Error('Empty response');
-
-      // Check if this URL is still the target (not superseded by a newer request)
-      if (preloadState.celebration.targetUrl !== audioUrl) {
-        console.log('Celebration preload superseded by newer request, discarding:', audioUrl);
-        return;
-      }
-
-      const blobUrl = URL.createObjectURL(blob);
-      // Reuse the existing element: replacing it would lose the
-      // user-gesture blessing granted by primeAudioPlayback on mobile
-      const audio = celebrationRef.current || new Audio();
-      audio.volume = 0.8;
-      audio.src = blobUrl;
-
-      await new Promise((resolve, reject) => {
-        audio.addEventListener('canplaythrough', resolve, { once: true });
-        audio.addEventListener('error', () => reject(new Error('Decode failed')), { once: true });
-        audio.load();
-      });
-
-      // Double-check target URL hasn't changed during audio load
-      if (preloadState.celebration.targetUrl !== audioUrl) {
-        console.log('Celebration preload superseded during load, discarding:', audioUrl);
-        URL.revokeObjectURL(blobUrl);
-        return;
-      }
-
-      celebrationRef.current = audio;
-      preloadState.celebration.url = audioUrl;
-      preloadState.celebration.done = true;
-      setCelebrationStatus('ready');
-      console.log('Celebration preload complete:', audioUrl);
-    } catch (error) {
-      console.log('Celebration preload failed:', error.message);
-      // Only set error if this is still the target URL
-      if (preloadState.celebration.targetUrl === audioUrl) {
-        setCelebrationStatus('error');
-      }
-    }
-  }, []);
-
-  const playDrumroll = useCallback((audioUrl, durationSeconds = null) => {
-    try {
-      if (drumrollTimerRef.current) {
-        clearTimeout(drumrollTimerRef.current);
-        drumrollTimerRef.current = null;
-      }
-
-      ensureElement(drumrollRef, audioUrl || '/drumroll.mp3');
-
-      drumrollRef.current.currentTime = 0;
-
-      if (!audioUnlocked) {
-        console.log('Audio play skipped: not unlocked');
-        return;
-      }
-
-      drumrollRef.current.play().catch((err) => {
-        console.log('Audio play failed, retrying:', err.message);
-        setTimeout(() => {
-          drumrollRef.current?.play().catch((e) => console.log('Audio retry failed:', e.message));
-        }, 150);
-      });
-
-      if (durationSeconds) {
-        // Small grace so the drumroll is not cut just before "0" when the
-        // countdown's chained timers drift on slow devices; the celebration
-        // pauses it anyway the moment it starts
-        drumrollTimerRef.current = setTimeout(() => {
-          if (drumrollRef.current) drumrollRef.current.pause();
-        }, durationSeconds * 1000 + 400);
-      }
-    } catch (error) {
-      console.log('Audio not supported');
-    }
-  }, [ensureElement]);
-
-  const playCelebration = useCallback((audioUrl) => {
-    try {
-      if (drumrollRef.current) drumrollRef.current.pause();
-
-      ensureElement(celebrationRef, audioUrl || '/celebration.mp3');
-
-      celebrationRef.current.currentTime = 0;
-
-      if (!audioUnlocked) {
-        console.log('Celebration play skipped: not unlocked');
-        return;
-      }
-
-      celebrationRef.current.play().catch((err) => {
-        console.log('Celebration play failed, retrying:', err.message);
-        setTimeout(() => {
-          celebrationRef.current?.play().catch((e) => console.log('Celebration retry failed:', e.message));
-        }, 150);
-      });
-    } catch (error) {
-      console.log('Audio not supported');
-    }
-  }, [ensureElement]);
-
+  }, [ensure]);
+  const playDrumroll = useCallback((url, duration) => {
+    for (const timer of timers.current) clearTimeout(timer);
+    timers.current.clear();
+    play('countdown', url, duration);
+  }, [play]);
+  const playCelebration = useCallback(url => {
+    if (elements.current.countdown) { elements.current.countdown.pause(); elements.current.countdown.dataset.playing = 'false'; }
+    play('celebration', url);
+  }, [play]);
   const stopAudio = useCallback(() => {
-    if (drumrollTimerRef.current) {
-      clearTimeout(drumrollTimerRef.current);
-      drumrollTimerRef.current = null;
-    }
-    if (drumrollRef.current) {
-      drumrollRef.current.pause();
-      drumrollRef.current.currentTime = 0;
-    }
-    if (celebrationRef.current) {
-      celebrationRef.current.pause();
-      celebrationRef.current.currentTime = 0;
-    }
+    for (const timer of timers.current) clearTimeout(timer);
+    timers.current.clear();
+    for (const audio of Object.values(elements.current)) { audio.dataset.playing = 'false'; audio.pause(); audio.currentTime = 0; }
   }, []);
-
-  const getAudioStatus = useCallback(() => {
-    if (drumrollStatus === 'idle' && celebrationStatus === 'idle') return 'idle';
-    if (drumrollStatus === 'loading' || celebrationStatus === 'loading') return 'loading';
-    return 'ready';
-  }, [drumrollStatus, celebrationStatus]);
-
-  return {
-    unlockAudio,
-    isAudioUnlocked,
-    primeAudioPlayback,
-    preloadDrumroll,
-    preloadCelebration,
-    playDrumroll,
-    playCelebration,
-    stopAudio,
-    audioStatus: getAudioStatus(),
-    drumrollStatus,
-    celebrationStatus,
-  };
-};
-
-export default useAudio;
+  useEffect(() => () => {
+    stopAudio();
+    for (const audio of Object.values(elements.current)) { audio.removeAttribute('src'); audio.load(); }
+    elements.current = {};
+    context.current?.close().catch(() => {});
+    context.current = null;
+  }, [stopAudio]);
+  const preloadDrumroll = useCallback(url => ensure('countdown', url), [ensure]);
+  const preloadCelebration = useCallback(url => ensure('celebration', url), [ensure]);
+  const values = Object.values(status);
+  const audioStatus = values.includes('error') ? 'error' : values.includes('loading') ? 'loading' : values.includes('fallback') ? 'fallback' : values.every(value => value === 'idle') ? 'idle' : 'ready';
+  return { unlockAudio, isAudioUnlocked, primeAudioPlayback, preloadDrumroll, preloadCelebration, playDrumroll, playCelebration, stopAudio, audioStatus };
+}

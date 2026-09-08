@@ -1,131 +1,37 @@
-/**
- * API Client
- * Centralized HTTP client with error handling
- * Single Responsibility: HTTP communication only
- */
-
-const API_URL = import.meta.env.VITE_API_URL || 'https://backend.babyreveal.party';
-
-class ApiError extends Error {
-  constructor(message, status, data) {
-    super(message);
-    this.status = status;
-    this.data = data;
-    this.name = 'ApiError';
-  }
+export const API_URL = (import.meta.env.VITE_API_URL || 'https://backend.babyreveal.party').replace(/\/$/, '');
+export class ApiError extends Error {
+  constructor(message, status, data = {}) { super(message); this.name = 'ApiError'; this.status = status; this.data = data; }
 }
-
 class ApiClient {
-  constructor(baseUrl) {
-    this.baseUrl = baseUrl;
-  }
-
-  /**
-   * Get stored auth token
-   */
-  getToken() {
-    return localStorage.getItem('token');
-  }
-
-  /**
-   * Set auth token
-   */
+  constructor(baseUrl) { this.baseUrl = baseUrl; this.memoryToken = null; }
+  getToken() { try { return localStorage.getItem('token') || this.memoryToken; } catch { return this.memoryToken; } }
   setToken(token) {
-    if (token) {
-      localStorage.setItem('token', token);
-    } else {
-      localStorage.removeItem('token');
-    }
+    this.memoryToken = token || null;
+    try { token ? localStorage.setItem('token', token) : localStorage.removeItem('token'); } catch { /* Private browsing can disable storage. */ }
   }
-
-  /**
-   * Build headers for request
-   */
-  getHeaders(includeAuth = true) {
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-
-    if (includeAuth) {
-      const token = this.getToken();
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
+  async request(method, endpoint, body, includeAuth, extraHeaders = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const headers = { ...extraHeaders };
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (includeAuth && this.getToken()) headers.Authorization = `Bearer ${this.getToken()}`;
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal: controller.signal });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        const message = typeof data?.error === 'string' ? data.error : typeof data?.message === 'string' ? data.message : response.status >= 500 ? 'The service is temporarily unavailable. Please try again.' : 'Unable to complete this request. Please try again.';
+        throw new ApiError(message, response.status, data || {});
       }
-    }
-
-    return headers;
+      if (data === null && response.status !== 204) throw new ApiError('The service returned an unexpected response. Please try again.', 502);
+      return data;
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(error.name === 'AbortError' ? 'This is taking longer than expected. Please try again.' : 'Unable to connect. Check your connection and try again.', 0);
+    } finally { clearTimeout(timeout); }
   }
-
-  /**
-   * Handle API response
-   */
-  async handleResponse(response) {
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw new ApiError(
-        data.error || data.message || 'Something went wrong',
-        response.status,
-        data
-      );
-    }
-
-    return data;
-  }
-
-  /**
-   * Make GET request
-   */
-  async get(endpoint, includeAuth = true) {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'GET',
-      headers: this.getHeaders(includeAuth),
-    });
-
-    return this.handleResponse(response);
-  }
-
-  /**
-   * Make POST request
-   */
-  async post(endpoint, body, includeAuth = true) {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers: this.getHeaders(includeAuth),
-      body: JSON.stringify(body),
-    });
-
-    return this.handleResponse(response);
-  }
-
-  /**
-   * Make PUT request
-   */
-  async put(endpoint, body, includeAuth = true) {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'PUT',
-      headers: this.getHeaders(includeAuth),
-      body: JSON.stringify(body),
-    });
-
-    return this.handleResponse(response);
-  }
-
-  /**
-   * Make DELETE request
-   */
-  async delete(endpoint, includeAuth = true) {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(includeAuth),
-    });
-
-    return this.handleResponse(response);
-  }
+  get(endpoint, includeAuth = true, headers) { return this.request('GET', endpoint, undefined, includeAuth, headers); }
+  post(endpoint, body, includeAuth = true, headers) { return this.request('POST', endpoint, body, includeAuth, headers); }
+  put(endpoint, body, includeAuth = true, headers) { return this.request('PUT', endpoint, body, includeAuth, headers); }
+  delete(endpoint, includeAuth = true, headers) { return this.request('DELETE', endpoint, undefined, includeAuth, headers); }
 }
-
-// Export singleton instance
-const apiClient = new ApiClient(API_URL);
-
-export { ApiError };
-export default apiClient;
+export default new ApiClient(API_URL);

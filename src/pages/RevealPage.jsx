@@ -4,6 +4,8 @@ import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
 import { io } from 'socket.io-client';
 import { genderService, authService } from '../api';
+import apiClient from '../api/apiClient';
+import { getRevealAccess } from '../api/revealAccess';
 import { useCountdown, useAudio, useHeartReactions, useRevealTheme } from '../hooks';
 import { Button, Card, Spinner, Alert } from '../components/common';
 import HeartReactions from '../components/HeartReactions';
@@ -63,6 +65,9 @@ function RevealPage() {
   // Set when the reveal already happened before this visit: after the
   // sound gate we go straight to the celebration instead of 'ready'
   const [pendingReveal, setPendingReveal] = useState(false);
+  const pendingEventRef = useRef(null);
+  const startingRef = useRef(false);
+  const realtimeProtocolRef = useRef(1);
 
   // Password protection state
   const [passwordRequired, setPasswordRequired] = useState(false);
@@ -190,6 +195,12 @@ function RevealPage() {
 
   // Handle reveal started event (from WebSocket or polling)
   const handleRevealStarted = useCallback((data) => {
+    if (!['boy', 'girl'].includes(data.gender)) return;
+    if (stepRef.current === 'sound-gate') {
+      pendingEventRef.current = { ...data, receivedAt: Date.now() };
+      setPendingReveal(true);
+      return;
+    }
     // The reveal is already running locally (e.g. the host receiving their
     // own broadcast, or a socket event racing the fallback poll) - a second
     // trigger would reset the countdown and restart the audio
@@ -200,32 +211,35 @@ function RevealPage() {
     const countdownDuration = preferences?.countdownDuration || 5;
 
     // Calculate elapsed time using server time
-    const serverTimestamp = serverTime ? new Date(serverTime).getTime() : Date.now();
+    const serverTimestamp = serverTime ? new Date(serverTime).getTime() + (data.receivedAt ? Date.now() - data.receivedAt : 0) : Date.now();
     const startTime = new Date(revealStartedAt).getTime();
     const elapsed = (serverTimestamp - startTime) / 1000;
 
     if (elapsed < countdownDuration) {
       // Still in countdown phase - join the countdown
       setGender(revealedGender);
+      stepRef.current = 'countdown';
       setStep('countdown');
       if (preferences.soundEnabled) {
         playDrumroll(countdownAudioUrl, countdownDuration - elapsed);
       }
-      startCountdown(Math.ceil(countdownDuration - elapsed));
+      startCountdown(countdownDuration - elapsed);
     } else if (elapsed < countdownDuration + 2) {
       // In opening animation phase
       setGender(revealedGender);
+      stepRef.current = 'opening';
       setStep('opening');
       if (preferences.soundEnabled) {
         playCelebration(celebrationAudioUrl);
       }
-      setTimeout(() => {
+      openingTimeoutRef.current = setTimeout(() => {
         setStep('reveal');
         triggerConfetti(revealedGender, false);
       }, Math.max(0, (countdownDuration + 1.2 - elapsed) * 1000));
     } else {
       // Already revealed - show final state
       setGender(revealedGender);
+      stepRef.current = 'reveal';
       setStep('reveal');
       triggerConfetti(revealedGender);
     }
@@ -268,7 +282,15 @@ function RevealPage() {
           });
         }
       } catch (err) {
-        console.error('Polling error:', err);
+        if (err.data?.code === 'REVEAL_PASSWORD_REQUIRED') {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          socketRef.current?.removeAllListeners();
+          socketRef.current?.disconnect();
+          socketRef.current = null;
+          setPasswordRequired(true);
+          setStep('password');
+        }
       }
     }, 1000);
   }, [code]);
@@ -287,11 +309,30 @@ function RevealPage() {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      socket.emit('join-reveal', code);
+      const joinPayload = realtimeProtocolRef.current >= 2
+        ? { code, token: apiClient.getToken(), accessToken: getRevealAccess(code) }
+        : code;
+      socket.emit('join-reveal', joinPayload, (result) => {
+        if (result?.error) {
+          if (result.code === 'REVEAL_PASSWORD_REQUIRED') setStep('password');
+          else startFallbackPolling();
+          return;
+        }
+        genderService.getStatusByCode(code).then(data => {
+          if (data.revealStartedAt) handleRevealStartedRef.current?.(data);
+        }).catch(() => startFallbackPolling());
+      });
       // Socket is live again - the fallback poll would double-deliver events
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
+      }
+      // Older servers do not acknowledge joins. Still recover events missed
+      // while disconnected during a rolling deployment.
+      if (realtimeProtocolRef.current < 2) {
+        genderService.getStatusByCode(code).then(data => {
+          if (data.revealStartedAt) handleRevealStartedRef.current?.(data);
+        }).catch(() => startFallbackPolling());
       }
     });
 
@@ -307,6 +348,8 @@ function RevealPage() {
     socket.on('heart-received', () => {
       spawnHeartRef.current?.();
     });
+
+    socket.on('disconnect', () => startFallbackPolling());
 
     socket.on('connect_error', () => {
       // Fall back to polling if WebSocket fails
@@ -338,7 +381,7 @@ function RevealPage() {
 
       try {
         const authPrefs = await authService.getPreferences();
-        if (authPrefs.preferences) {
+        if (statusData.isHost && authPrefs.preferences) {
           userPrefs = { ...DEFAULT_PREFERENCES, ...authPrefs.preferences };
         }
       } catch {
@@ -441,145 +484,72 @@ function RevealPage() {
     };
   }, [step, code, isPreviewMode]);
 
+  const showStatus = (data) => {
+    realtimeProtocolRef.current = data.realtimeProtocol || 1;
+    if (data.isDoctor) throw new Error('This is the Secret Keeper link. Ask the parents for their Reveal link.');
+    const userPrefs = { ...DEFAULT_PREFERENCES, ...(data.preferences || {}) };
+    setPreferences(userPrefs);
+    setIsHost(!!data.isHost);
+    setError('');
+    if (!data.isSet) { setStep('not-ready'); return; }
+    const needsSound = userPrefs.soundEnabled && !isAudioUnlocked;
+    if (needsSound) {
+      stepRef.current = 'sound-gate';
+      setStep('sound-gate');
+      if (data.revealStartedAt) {
+        pendingEventRef.current = { ...data, receivedAt: Date.now() };
+        setPendingReveal(true);
+      }
+    } else {
+      stepRef.current = 'ready';
+      setStep('ready');
+      if (data.revealStartedAt) {
+        // Let the preference update render before starting audio and countdown.
+        openingTimeoutRef.current = setTimeout(() => handleRevealStartedRef.current?.(data), 0);
+      }
+    }
+    if (userPrefs.syncedReveal) connectWebSocket();
+  };
+
   const checkStatus = async () => {
-    // Re-entrancy guard: "Check Now" double-taps and effect re-runs must
-    // not run concurrent status checks (each could trigger the reveal)
     if (checkingStatusRef.current) return;
     checkingStatusRef.current = true;
     try {
       const data = await genderService.getStatusByCode(code);
-
-      if (data.isDoctor) {
-        setError('This is not a reveal link');
-        setStep('error');
-        return;
+      // Support the existing backend during a frontend-first rollout.
+      if (!data.isHost && !getRevealAccess(code) && !passwordRequired) {
+        const check = await authService.checkRevealPassword(code);
+        if (check.passwordRequired) { setPasswordRequired(true); setStep('password'); return; }
       }
-
-      // Store preferences from API response (includes audio URLs)
-      let userPrefs = { ...DEFAULT_PREFERENCES };
-      if (data.preferences) {
-        userPrefs = { ...userPrefs, ...data.preferences };
-      }
-
-      // Set preferences immediately - audio URLs are included, browser will fetch when played
-      setPreferences(userPrefs);
-
-      // Check if this is the host (owner of the reveal)
-      setIsHost(data.isHost || false);
-
-      // Update viewer count if available
-      if (data.viewerCount) {
-        setViewerCount(data.viewerCount);
-      }
-
-      if (!data.isSet) {
-        setStep('not-ready');
-      } else {
-        // Check if reveal already started (for synced mode)
-        if (data.revealStartedAt) {
-          // Already showing (or about to show) the celebration - the init
-          // effect re-runs when audio unlocks, and this must not re-fire
-          // the confetti and celebration sound
-          if (step === 'reveal' || pendingReveal) {
-            return;
-          }
-          // Reveal already in progress or completed
-          setGender(data.gender);
-          // Without a user gesture mobile browsers block the celebration
-          // audio entirely, so late visitors go through the sound gate too
-          if (userPrefs.soundEnabled && !isAudioUnlocked) {
-            setPendingReveal(true);
-            setStep('sound-gate');
-          } else {
-            setStep('reveal');
-            triggerConfetti(data.gender);
-          }
-          // Still connect WebSocket for heart reactions in synced mode
-          if (data.preferences?.syncedReveal) {
-            connectWebSocket();
-          }
-          return;
-        }
-
-        // Check if password is required
-        try {
-          const pwCheck = await authService.checkRevealPassword(code);
-          if (pwCheck.passwordRequired) {
-            setPasswordRequired(true);
-            setStep('password');
-          } else {
-            // Show sound gate if sound is enabled and audio not unlocked
-            const needsSoundGate = userPrefs.soundEnabled && !isAudioUnlocked;
-            setStep(needsSoundGate ? 'sound-gate' : 'ready');
-            // Connect WebSocket for synced reveal (host needs it for viewer count, guest needs it for reveal event)
-            if (data.preferences?.syncedReveal) {
-              connectWebSocket();
-            }
-          }
-        } catch {
-          // If check fails, proceed without password
-          const needsSoundGate = userPrefs.soundEnabled && !isAudioUnlocked;
-          setStep(needsSoundGate ? 'sound-gate' : 'ready');
-          if (data.preferences?.syncedReveal) {
-            connectWebSocket();
-          }
-        }
-      }
+      showStatus(data);
     } catch (err) {
-      setError(err.message || 'Invalid or expired link');
-      setStep('error');
-    } finally {
-      checkingStatusRef.current = false;
-    }
+      if (err.data?.code === 'REVEAL_PASSWORD_REQUIRED') {
+        setPasswordRequired(true);
+        setStep('password');
+      } else {
+        setError(err.message || 'Unable to open this reveal. Please try again.');
+        setStep('error');
+      }
+    } finally { checkingStatusRef.current = false; }
   };
 
   const verifyPassword = async () => {
-    if (!passwordInput) {
-      setPasswordError('Please enter the password');
-      return;
-    }
+    if (verifyingPassword) return;
+    if (!passwordInput) { setPasswordError('Please enter the password'); return; }
     setPasswordError('');
     setVerifyingPassword(true);
     try {
-      const result = await authService.verifyRevealPassword(code, passwordInput);
-      if (result.valid) {
-        // Re-fetch status: the reveal may have started while the guest was
-        // typing, and synced mode needs its WebSocket (checkStatus returned
-        // at the password branch before ever connecting it)
-        let data = null;
-        try {
-          data = await genderService.getStatusByCode(code);
-        } catch {
-          // Fall through with what we already know
-        }
-        if (preferences.syncedReveal || data?.preferences?.syncedReveal) {
-          connectWebSocket();
-        }
-        if (data?.revealStartedAt) {
-          setGender(data.gender);
-          if (preferences.soundEnabled && !isAudioUnlocked) {
-            setPendingReveal(true);
-            setStep('sound-gate');
-          } else {
-            setStep('reveal');
-            triggerConfetti(data.gender);
-          }
-          return;
-        }
-        // Show sound gate if sound is enabled and audio not unlocked
-        const needsSoundGate = preferences.soundEnabled && !isAudioUnlocked;
-        setStep(needsSoundGate ? 'sound-gate' : 'ready');
-      } else {
-        setPasswordError('Incorrect password');
-      }
-    } catch (err) {
-      setPasswordError(err.message || 'Invalid password');
-    } finally {
-      setVerifyingPassword(false);
-    }
+      await authService.verifyRevealPassword(code, passwordInput);
+      const data = await genderService.getStatusByCode(code);
+      showStatus(data);
+      setPasswordInput('');
+    } catch (err) { setPasswordError(err.message || 'Unable to verify. Please try again.'); }
+    finally { setVerifyingPassword(false); }
   };
 
   const startReveal = async () => {
+    if (startingRef.current) return;
+    startingRef.current = true;
     setLoading(true);
 
     // Prime while the tap gesture is still active - after the awaited
@@ -593,8 +563,13 @@ function RevealPage() {
       if (!isPreviewMode) {
         const data = await genderService.revealGender(code);
         setGender(data.gender);
+        if (data.revealStartedAt) {
+          handleRevealStartedRef.current?.(data);
+          return;
+        }
       }
 
+      stepRef.current = 'countdown';
       setStep('countdown');
       if (preferences.soundEnabled) {
         playDrumroll(countdownAudioUrl, preferences.countdownDuration);
@@ -602,8 +577,9 @@ function RevealPage() {
       startCountdown(preferences.countdownDuration);
     } catch (err) {
       setError(err.message || 'Failed to reveal');
-      setStep('error');
+      setStep(err.data?.code === 'REVEAL_PASSWORD_REQUIRED' ? 'password' : 'error');
     } finally {
+      startingRef.current = false;
       setLoading(false);
     }
   };
@@ -642,6 +618,8 @@ function RevealPage() {
               <input
                 type="password"
                 placeholder="Enter password"
+                aria-label="Reveal password"
+                autoComplete="current-password"
                 value={passwordInput}
                 onChange={(e) => {
                   setPasswordInput(e.target.value);
@@ -782,7 +760,7 @@ function RevealPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              Check back soon for the reveal!
+              Ask your secret keeper to confirm their selection, then check again.
             </motion.p>
 
             {/* Enhanced button */}
@@ -820,7 +798,7 @@ function RevealPage() {
                 <span className={`text-[10px] tracking-wide transition-colors duration-300 ${
                   audioStatus === 'loading' ? 'text-white/30' : 'text-white/40'
                 }`}>
-                  {audioStatus === 'loading' ? 'Caching sounds' : 'Sounds cached'}
+                  {audioStatus === 'loading' ? 'Loading sounds' : audioStatus === 'error' ? 'Sound unavailable — your reveal will still work' : audioStatus === 'fallback' ? 'Using default sounds' : 'Sounds ready'}
                 </span>
               </motion.div>
             )}
@@ -842,7 +820,7 @@ function RevealPage() {
         <div className="relative z-10 w-full max-w-md">
           <Card className="text-center">
             <div className="text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-4">Error</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-4">Let’s try that again</h1>
             <Alert variant="error">{error}</Alert>
             <Button variant="secondary" fullWidth onClick={checkStatus} className="mt-4">
               Try Again
@@ -868,8 +846,9 @@ function RevealPage() {
         setEnablingSound(false);
         if (pendingReveal) {
           setPendingReveal(false);
-          setStep('reveal');
-          triggerConfetti(gender);
+          stepRef.current = 'ready';
+          setStep('ready');
+          handleRevealStartedRef.current?.(pendingEventRef.current);
         } else {
           setStep('ready');
         }
@@ -881,8 +860,9 @@ function RevealPage() {
       setPreferences(prev => ({ ...prev, soundEnabled: false }));
       if (pendingReveal) {
         setPendingReveal(false);
-        setStep('reveal');
-        triggerConfetti(gender, false);
+        stepRef.current = 'ready';
+        setStep('ready');
+        openingTimeoutRef.current = setTimeout(() => handleRevealStartedRef.current?.(pendingEventRef.current), 0);
       } else {
         setStep('ready');
       }
@@ -925,7 +905,7 @@ function RevealPage() {
                 onClick={handleContinueSilent}
                 disabled={enablingSound}
               >
-                Skip
+                Stay muted
               </button>
               <motion.button
                 className="flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm text-amber-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:shadow-md hover:shadow-amber-400/25 transition-all duration-200 disabled:opacity-80 flex items-center justify-center gap-2"
@@ -939,7 +919,7 @@ function RevealPage() {
                     Enabling…
                   </>
                 ) : (
-                  'Enable'
+                  'Enable sound'
                 )}
               </motion.button>
             </div>
@@ -1041,7 +1021,7 @@ function RevealPage() {
                 <span className={`text-[10px] tracking-wide transition-colors duration-300 ${
                   audioStatus === 'loading' ? 'text-white/30' : 'text-white/40'
                 }`}>
-                  {audioStatus === 'loading' ? 'Loading sounds' : 'Sounds ready'}
+                  {audioStatus === 'loading' ? 'Loading sounds' : audioStatus === 'error' ? 'Sound unavailable — your reveal will still work' : audioStatus === 'fallback' ? 'Using default sounds' : 'Sounds ready'}
                 </span>
               </div>
             )}
@@ -1100,7 +1080,7 @@ function RevealPage() {
                 <span className={`text-[10px] tracking-wide transition-colors duration-300 ${
                   audioStatus === 'loading' ? 'text-white/30' : 'text-white/40'
                 }`}>
-                  {audioStatus === 'loading' ? 'Loading sounds' : 'Sounds ready'}
+                  {audioStatus === 'loading' ? 'Loading sounds' : audioStatus === 'error' ? 'Sound unavailable — your reveal will still work' : audioStatus === 'fallback' ? 'Using default sounds' : 'Sounds ready'}
                 </span>
               </div>
             )}
@@ -1109,7 +1089,7 @@ function RevealPage() {
             <div className="mt-8 pt-6 border-t border-white/10">
               <p className="text-white/40 text-sm mb-3">Are you the host?</p>
               <button
-                onClick={() => navigate(`/auth?redirect=/reveal/${code}`)}
+                onClick={() => navigate(`/auth?mode=login&redirect=/reveal/${code}`)}
                 className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -42,8 +42,8 @@ const Input = ({
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy}
           className={`
-            w-full bg-white/5 backdrop-blur border rounded-xl px-4 py-3 text-white
-            placeholder-white/30 transition-all duration-200
+            w-full bg-white/5 border rounded-xl px-4 py-3 text-white
+            placeholder-white/30 transition-colors duration-150
             focus:bg-white/[0.08] focus:outline-none focus:ring-1
             ${isPassword ? 'pr-11' : ''}
             ${error
@@ -60,8 +60,7 @@ const Input = ({
             onClick={() => setShowPassword((s) => !s)}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
             aria-pressed={showPassword}
-            tabIndex={-1}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-white/40 hover:text-white/80 transition-colors"
+            className="absolute right-1 top-1/2 -translate-y-1/2 p-3 rounded-md text-white/60 hover:text-white transition-colors"
           >
             {showPassword ? (
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,7 +77,7 @@ const Input = ({
       </div>
 
       {hint && !error && (
-        <p id={`${inputId}-hint`} className="text-white/35 text-xs mt-1.5">
+        <p id={`${inputId}-hint`} className="text-white/55 text-xs mt-1.5">
           {hint}
         </p>
       )}
