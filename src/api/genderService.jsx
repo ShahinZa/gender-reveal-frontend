@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { revealHeaders } from './revealAccess';
 
 /**
  * Gender Service
@@ -11,7 +12,7 @@ const genderService = {
    * Includes auth token if available to detect if viewer is host (for synced reveal)
    */
   async getStatusByCode(code) {
-    return apiClient.get(`/api/status/${code}`, true);
+    return apiClient.get(`/api/status/${encodeURIComponent(code)}`, true, revealHeaders(code));
   },
 
   /**
@@ -32,7 +33,7 @@ const genderService = {
    * Reveal gender (party action)
    */
   async revealGender(code) {
-    return apiClient.post('/api/reveal', { code }, false);
+    return apiClient.post('/api/reveal', { code }, true, revealHeaders(code));
   },
 
   /**

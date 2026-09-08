@@ -31,107 +31,111 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
   const countdownInputRef = useRef(null);
   const celebrationInputRef = useRef(null);
 
-  /**
-   * Open preview in a new tab
-   * Opens the actual reveal page with preview query parameters
-   */
-  const openPreview = useCallback((gender) => {
-    if (!revealCode) {
-      console.error('No reveal code available for preview');
-      return;
-    }
-    const previewUrl = `/reveal/${revealCode}?preview=true&gender=${gender}`;
-    window.open(previewUrl, '_blank', 'noopener,noreferrer');
-  }, [revealCode]);
+  const prefsRef = useRef(preferences);
+  prefsRef.current = preferences;
+  const saveTimer = useRef(null);
+  const saveQueue = useRef(Promise.resolve(true));
+  const revision = useRef(0);
+  const pending = useRef(null);
+  const onChangeRef = useRef(onPreferencesChange);
+  onChangeRef.current = onPreferencesChange;
+  const [loadError, setLoadError] = useState('');
+  const [saveError, setSaveError] = useState('');
 
-  // Fetch preferences on mount
-  useEffect(() => {
-    const fetchPreferences = async () => {
+  const fetchPreferences = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const data = await authService.getPreferences();
+      const next = { ...DEFAULT_PREFERENCES, ...data.preferences };
+      prefsRef.current = next;
+      setPreferences(next);
+      onChangeRef.current?.(next);
+    } catch (err) { setLoadError(err.message); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { fetchPreferences(); }, [fetchPreferences]);
+
+  const savePreferences = useCallback(newPrefs => {
+    const currentRevision = revision.current;
+    setSaving(true);
+    setSaveStatus('pending');
+    setSaveError('');
+    // Never send audio data back as preferences. Serialize saves so an older
+    // response cannot overwrite a newer selection on the server.
+    const { customAudio, ...settings } = newPrefs;
+    saveQueue.current = saveQueue.current.catch(() => false).then(async () => {
       try {
-        const data = await authService.getPreferences();
-        if (data.preferences) {
-          setPreferences({ ...DEFAULT_PREFERENCES, ...data.preferences });
-        }
+        await authService.updatePreferences(settings);
+        onChangeRef.current?.(newPrefs);
+        if (currentRevision === revision.current) setSaveStatus('saved');
+        return true;
       } catch (err) {
-        console.error('Failed to fetch preferences:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPreferences();
+        if (currentRevision === revision.current) { setSaveStatus('error'); setSaveError(err.message); }
+        return false;
+      } finally { if (currentRevision === revision.current) setSaving(false); }
+    });
+    return saveQueue.current;
   }, []);
 
-  // Debounced save
-  const savePreferences = useCallback(async (newPrefs) => {
-    setSaving(true);
-    setSaveStatus(null);
-    try {
-      await authService.updatePreferences(newPrefs);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus(null), 2000);
-      // Notify parent of preference changes
-      onPreferencesChange?.(newPrefs);
-    } catch (err) {
-      console.error('Failed to save preferences:', err);
-      setSaveStatus('error');
-    } finally {
-      setSaving(false);
+  const flush = useCallback(() => {
+    clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    if (pending.current) {
+      const next = pending.current;
+      pending.current = null;
+      return savePreferences(next);
     }
-  }, [onPreferencesChange]);
+    return saveQueue.current;
+  }, [savePreferences]);
 
-  // Handle preference change with debounce
+  const updatePreferences = useCallback(next => {
+    prefsRef.current = next;
+    setPreferences(next);
+    pending.current = next;
+    revision.current += 1;
+    setSaveStatus('pending');
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(flush, 350);
+  }, [flush]);
+
   const handleChange = useCallback((key, value) => {
-    setPreferences(prev => {
-      const newPrefs = { ...prev, [key]: value };
-      // Debounce save
-      const timeoutId = setTimeout(() => savePreferences(newPrefs), 500);
-      // Clear previous timeout
-      if (window.preferenceSaveTimeout) {
-        clearTimeout(window.preferenceSaveTimeout);
-      }
-      window.preferenceSaveTimeout = timeoutId;
-      return newPrefs;
-    });
-  }, [savePreferences]);
+    if (loadError || loading) return;
+    updatePreferences({ ...prefsRef.current, [key]: value });
+  }, [updatePreferences, loadError, loading]);
 
-  // Let the parent (Dashboard reveal card) drive the synced-reveal toggle through this same source of truth
+  useEffect(() => {
+    const beforeUnload = event => {
+      if (saveTimer.current || pending.current) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => { window.removeEventListener('beforeunload', beforeUnload); flush(); };
+  }, [flush]);
+
   useImperativeHandle(ref, () => ({
-    setSyncedReveal: (value) => handleChange('syncedReveal', value),
-  }), [handleChange]);
+    setSyncedReveal: value => handleChange('syncedReveal', value),
+    flush,
+  }), [handleChange, flush]);
 
-  // Handle skin tone change - also update emojis with new skin tone
-  const handleSkinToneChange = useCallback((newSkinTone) => {
-    setPreferences(prev => {
-      // Find base emojis by removing any existing skin tone modifiers
-      const getBaseEmoji = (emoji) => {
-        if (!emoji) return emoji;
-        // Skin tone modifiers are in range U+1F3FB to U+1F3FF
-        return emoji.replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '');
-      };
+  const openPreview = useCallback(async gender => {
+    if (!revealCode) return;
+    // Open on the gesture, then wait for the current settings to be saved.
+    const tab = window.open('about:blank', '_blank');
+    if (!tab) { setSaveError('Allow pop-ups to open your preview.'); return; }
+    tab.opener = null;
+    if (await flush()) tab.location.href = `/reveal/${revealCode}?preview=true&gender=${gender}`;
+    else tab.close();
+  }, [revealCode, flush]);
 
-      const baseBoyEmoji = getBaseEmoji(prev.boyEmoji);
-      const baseGirlEmoji = getBaseEmoji(prev.girlEmoji);
-
-      // Check if current emojis support skin tones
-      const boySupports = EMOJI_OPTIONS.boy.find(e => e.base === baseBoyEmoji)?.supportsSkinTone;
-      const girlSupports = EMOJI_OPTIONS.girl.find(e => e.base === baseGirlEmoji)?.supportsSkinTone;
-
-      const newPrefs = {
-        ...prev,
-        skinTone: newSkinTone,
-        boyEmoji: boySupports ? applySkintone(baseBoyEmoji, newSkinTone) : prev.boyEmoji,
-        girlEmoji: girlSupports ? applySkintone(baseGirlEmoji, newSkinTone) : prev.girlEmoji,
-      };
-
-      // Debounce save
-      const timeoutId = setTimeout(() => savePreferences(newPrefs), 500);
-      if (window.preferenceSaveTimeout) {
-        clearTimeout(window.preferenceSaveTimeout);
-      }
-      window.preferenceSaveTimeout = timeoutId;
-      return newPrefs;
-    });
-  }, [savePreferences]);
+  const handleSkinToneChange = useCallback(skinTone => {
+    const prev = prefsRef.current;
+    const next = { ...prev, skinTone };
+    for (const kind of ['boy', 'girl']) {
+      const base = prev[`${kind}Emoji`].replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '');
+      next[`${kind}Emoji`] = EMOJI_OPTIONS[kind].find(item => item.base === base)?.supportsSkinTone ? applySkintone(base, skinTone) : base;
+    }
+    updatePreferences(next);
+  }, [updatePreferences]);
 
   // Handle audio file upload
   const handleAudioUpload = useCallback(async (type, file) => {
@@ -156,7 +160,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
       const reader = new FileReader();
       reader.onload = async () => {
         try {
-          const base64Data = reader.result;
+          const base64Data = String(reader.result).replace(/^data:[^;]*;base64,/, 'data:audio/mpeg;base64,');
           await authService.uploadAudio(type, base64Data, file.name);
 
           // Update local preferences state - include data for demo preview
@@ -164,7 +168,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
             ...prev,
             customAudio: {
               ...prev.customAudio,
-              [type]: { fileName: file.name, size: file.size, data: base64Data },
+              [type]: { fileName: file.name, size: file.size },
             },
           }));
           setSaveStatus('saved');
@@ -228,6 +232,8 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
     return `${truncatedName}.${ext}`;
   };
 
+  if (loadError) return <div role="alert" className="rounded-2xl border border-amber-400/25 p-5 text-sm"><p className="text-white/80 mb-3">Your saved settings couldn’t load. {loadError}</p><button onClick={fetchPreferences} className="text-purple-300 underline min-h-11">Try loading settings again</button></div>;
+
   if (loading) {
     return (
       <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
@@ -243,6 +249,8 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
       {/* Header - Always visible */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+        aria-controls="reveal-settings-content"
         className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors"
       >
         <div className="flex items-center gap-3 min-w-0">
@@ -278,9 +286,11 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
         </div>
       </button>
 
+      {saveError && <div role="alert" className="px-5 pb-4 text-sm text-red-200">{saveError} <button onClick={() => savePreferences(prefsRef.current)} className="underline min-h-11 ml-2">Retry save</button></div>}
+      {saveStatus === 'pending' && <p role="status" className="px-5 pb-3 text-xs text-white/60">Saving your changes…</p>}
       {/* Expandable content */}
       {isExpanded && (
-        <div className="px-5 pb-5 space-y-6 border-t border-white/10 pt-5">
+        <div id="reveal-settings-content" className="px-5 pb-5 space-y-6 border-t border-white/10 pt-5">
           {/* Theme Selection */}
           <div>
             <label className="block text-white/70 text-sm font-medium mb-3">Color Theme</label>
@@ -289,6 +299,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                 <button
                   key={key}
                   onClick={() => handleChange('theme', key)}
+                  aria-pressed={preferences.theme === key}
                   className={`p-3 rounded-xl border-2 transition-all ${
                     preferences.theme === key
                       ? 'border-white/50 bg-white/10'
@@ -325,6 +336,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                 <button
                   key={option.value}
                   onClick={() => handleChange('countdownDuration', option.value)}
+                  aria-pressed={preferences.countdownDuration === option.value}
                   className={`py-3 px-2 sm:px-4 rounded-xl border-2 transition-all ${
                     preferences.countdownDuration === option.value
                       ? 'border-white/50 bg-white/10 text-white'
@@ -335,49 +347,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                 </button>
               ))}
             </div>
-            {preferences.soundEnabled && preferences.countdownDuration !== 5 && !preferences.customAudio?.countdown && (
-              <div className="mt-2.5 flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-500/[0.06] px-3 py-2 animate-fade-in">
-                <svg className="w-3.5 h-3.5 text-amber-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                </svg>
-                <p className="text-amber-200/80 text-xs leading-relaxed text-left">
-                  The default drumroll is timed for a 5-second countdown, so at {preferences.countdownDuration} seconds it will
-                  {preferences.countdownDuration < 5 ? ' get cut off early' : ' end before the reveal'}. For a perfect match, upload your own sound in{' '}
-                  <button
-                    onClick={() => document.getElementById('custom-audio-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-                    className="text-amber-200 font-medium underline underline-offset-2 hover:text-amber-100 transition-colors"
-                  >
-                    Custom Audio
-                  </button>
-                  {' '}below.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Baby Count - Coming Soon */}
-          <div className="opacity-50">
-            <label className="block text-white/70 text-sm font-medium mb-3">
-              Number of Babies
-              <span className="ml-2 text-purple-400/80 text-xs font-normal inline-flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Coming Soon
-              </span>
-            </label>
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              {BABY_COUNT_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  disabled={true}
-                  className="py-3 px-2 sm:px-4 rounded-xl border-2 transition-all border-white/10 text-white/60 cursor-not-allowed"
-                >
-                  <div className="text-lg sm:text-xl mb-1">{option.icon}</div>
-                  <div className="text-sm">{option.label}</div>
-                </button>
-              ))}
-            </div>
+            <p className="text-white/50 text-xs mt-2">The built-in drumroll follows your countdown. You can also upload your own music.</p>
           </div>
 
           {/* Animation Intensity */}
@@ -388,6 +358,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                 <button
                   key={key}
                   onClick={() => handleChange('animationIntensity', key)}
+                  aria-pressed={preferences.animationIntensity === key}
                   className={`py-3 px-2 sm:px-4 rounded-xl border-2 transition-all ${
                     preferences.animationIntensity === key
                       ? 'border-white/50 bg-white/10'
@@ -420,6 +391,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
             <label className="block text-white/70 text-sm font-medium mb-3">Sound Effects</label>
             <button
               onClick={() => handleChange('soundEnabled', !preferences.soundEnabled)}
+              role="switch" aria-label="Sound effects" aria-checked={preferences.soundEnabled}
               className={`w-full flex items-center justify-between py-3 px-4 rounded-xl border-2 transition-all ${
                 preferences.soundEnabled
                   ? 'border-green-500/50 bg-green-500/10'
@@ -465,6 +437,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
             </label>
             <button
               onClick={() => handleChange('syncedReveal', !preferences.syncedReveal)}
+              role="switch" aria-label="Everyone reveals together" aria-checked={preferences.syncedReveal}
               className={`w-full flex items-center justify-between py-3 px-4 rounded-xl border-2 transition-all ${
                 preferences.syncedReveal
                   ? 'border-purple-500/50 bg-purple-500/10'
@@ -540,6 +513,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                         </span>
                         <button
                           onClick={() => handleAudioDelete('countdown')}
+                          aria-label="Remove countdown audio"
                           disabled={audioUploading.countdown}
                           className="p-1 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors disabled:opacity-50 flex-shrink-0"
                         >
@@ -607,6 +581,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                         </span>
                         <button
                           onClick={() => handleAudioDelete('celebration')}
+                          aria-label="Remove celebration audio"
                           disabled={audioUploading.celebration}
                           className="p-1 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors disabled:opacity-50 flex-shrink-0"
                         >
@@ -668,6 +643,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
             </label>
             <div className="relative">
               <input
+                aria-label="Custom message"
                 type="text"
                 value={preferences.customMessage}
                 onChange={(e) => handleChange('customMessage', e.target.value)}
@@ -703,7 +679,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                         ? 'bg-white/20 border-2 border-white/50'
                         : 'bg-white/5 border border-white/10 hover:border-white/30'
                     }`}
-                    title={tone.label}
+                    title={tone.label} aria-label={`Skin tone ${tone.label}`} aria-pressed={(preferences.skinTone || '') === tone.modifier}
                   >
                     {tone.modifier ? `👋${tone.modifier}` : '👋'}
                   </button>
@@ -728,6 +704,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                       <button
                         key={emojiObj.base}
                         onClick={() => handleChange('boyEmoji', displayEmoji)}
+                        aria-label={`Boy emoji ${displayEmoji}`} aria-pressed={isSelected}
                         className={`w-10 h-10 rounded-lg text-2xl flex items-center justify-center transition-all ${
                           isSelected
                             ? 'bg-blue-500/30 border-2 border-blue-400'
@@ -757,6 +734,7 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                       <button
                         key={emojiObj.base}
                         onClick={() => handleChange('girlEmoji', displayEmoji)}
+                        aria-label={`Girl emoji ${displayEmoji}`} aria-pressed={isSelected}
                         className={`w-10 h-10 rounded-lg text-2xl flex items-center justify-center transition-all ${
                           isSelected
                             ? 'bg-pink-500/30 border-2 border-pink-400'

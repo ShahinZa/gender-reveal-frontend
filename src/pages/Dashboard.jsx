@@ -1,17 +1,25 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
 import RevealSettings from '../components/RevealSettings';
 import authService from '../api/authService';
 import Footer from '../components/Footer';
+import useDialog from '../hooks/useDialog';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { user, status, logout, isAuthenticated, loading, refreshStatus } = useAuth();
+  const { user, status, logout, isAuthenticated, loading, refreshStatus, authError, retryAuth } = useAuth();
   const [copied, setCopied] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showQR, setShowQR] = useState(null);
+  const [feedback, setFeedback] = useState('');
+  const [statusError, setStatusError] = useState('');
+  const copyTimer = useRef(null);
+  const qrRef = useRef(null);
+  const closeQR = useCallback(() => setShowQR(null), []);
+  useDialog(qrRef, !!showQR, closeQR);
+  useEffect(() => () => clearTimeout(copyTimer.current), []);
 
   // Password protection state
   const [passwordEnabled, setPasswordEnabled] = useState(false);
@@ -33,19 +41,20 @@ function Dashboard() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refreshStatus();
-    setTimeout(() => setRefreshing(false), 500);
+    setStatusError('');
+    try { await refreshStatus(); } catch (error) { setStatusError(error.message); }
+    finally { setRefreshing(false); }
   };
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!loading && !isAuthenticated && !authError) {
       navigate('/auth');
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [isAuthenticated, loading, navigate, authError]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      refreshStatus();
+      refreshStatus().catch(error => setStatusError(error.message));
       // Load password protection status
       authService.getRevealPasswordStatus().then((data) => {
         if (data.success) {
@@ -87,10 +96,14 @@ function Dashboard() {
     }
   };
 
-  const copyToClipboard = (text, type) => {
-    navigator.clipboard.writeText(text);
-    setCopied(type);
-    setTimeout(() => setCopied(null), 2000);
+  const copyToClipboard = async (text, type) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(type);
+      setFeedback(type === 'doctor' ? 'Link copied. Paste it into a message to your secret keeper.' : 'Reveal link copied. Paste it into a message to your guests.');
+      clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(null), 3000);
+    } catch { setFeedback('Copying is unavailable in this browser. Select and copy the link shown in the QR panel.'); setShowQR(type); }
   };
 
   const getLink = (type) => {
@@ -104,14 +117,28 @@ function Dashboard() {
     copyToClipboard(getLink(type), type);
   };
 
+  const openPreview = async (event, gender) => {
+    event.preventDefault();
+    const tab = window.open('about:blank', '_blank');
+    if (!tab) { setFeedback('Allow pop-ups to open your preview.'); return; }
+    tab.opener = null;
+    if (await revealSettingsRef.current?.flush()) {
+      tab.location.href = `/reveal/${user.revealCode}?preview=true&gender=${gender}`;
+    } else {
+      tab.close();
+      setFeedback('Your settings haven’t saved yet. Retry the save below before opening your preview.');
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-viewport flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
+  if (authError && !user) return <div className="min-h-viewport flex items-center justify-center p-5"><div className="max-w-sm text-center"><h1 className="text-2xl font-semibold mb-3">Let’s reconnect</h1><p role="alert" className="text-white/70 mb-6">{authError} Your sign-in is saved.</p><button onClick={retryAuth} className="btn-primary">Try again</button></div></div>;
   if (!user) return null;
 
   const getStatusConfig = () => {
@@ -142,14 +169,14 @@ function Dashboard() {
   const statusConfig = getStatusConfig();
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-viewport relative overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
 
-      <div className="relative z-10 min-h-screen px-4 py-6 md:py-12">
+      <div className="relative z-10 min-h-viewport px-4 py-6 md:py-12">
         <div className="max-w-2xl mx-auto animate-fade-in">
           {/* Header */}
           <header className="flex items-center justify-between mb-8">
@@ -181,10 +208,12 @@ function Dashboard() {
                 ? 'Congratulations! The big moment has happened. 🎉'
                 : status?.isSet
                   ? "The gender's locked in and hidden. Reveal it at your party!"
-                  : "You're almost set. Just one quick step to go."}
+                  : "Your reveal is created. Now let’s save the secret."}
             </p>
           </div>
 
+          {feedback && <p role="status" className="rounded-xl bg-purple-500/10 border border-purple-400/20 px-4 py-3 mb-5 text-sm text-purple-100">{feedback}</p>}
+          {statusError && <div role="alert" className="rounded-xl border border-amber-400/25 px-4 py-3 mb-5 text-sm text-amber-100">Status couldn’t refresh: {statusError} <button className="underline ml-2 min-h-11" onClick={handleRefresh}>Try again</button></div>}
           {/* Progress stepper */}
           <div className="flex items-center justify-center mb-8">
             {[
@@ -252,7 +281,7 @@ function Dashboard() {
                 </button>
               </div>
               <p className="text-white/45 text-xs max-w-xs mx-auto leading-relaxed">
-                Missed someone? Your reveal link stays live for 60 days, then all data is deleted for your privacy.
+                Missed someone? Your reveal link stays live for 60 days, then the saved gender result is deleted. Your account remains available.
               </p>
             </div>
           ) : status?.isSet ? (
@@ -271,7 +300,7 @@ function Dashboard() {
               </p>
               <button
                 className="w-full py-4 rounded-2xl font-semibold bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 hover:shadow-xl hover:shadow-amber-400/30 transition-all text-lg hover:scale-[1.01] mb-3"
-                onClick={() => navigate(`/reveal/${user.revealCode}`)}
+                onClick={async () => { if (await revealSettingsRef.current?.flush()) navigate(`/reveal/${user.revealCode}`); else setFeedback('Your settings haven’t saved yet. Retry the save below before opening your reveal.'); }}
               >
                 Open The Big Reveal
               </button>
@@ -311,16 +340,16 @@ function Dashboard() {
               <span className="inline-block text-[11px] font-bold uppercase tracking-[0.15em] text-pink-300/90 mb-2">
                 Step 1
               </span>
-              <h2 className="text-white font-bold text-xl md:text-2xl mb-2">Get the gender locked in</h2>
+              <h2 className="text-white font-bold text-xl md:text-2xl mb-2">Send this to your secret keeper</h2>
               <p className="text-white/55 text-sm mb-6 max-w-sm mx-auto leading-relaxed">
-                Tap the button below, then hand your phone to whoever knows (your doctor, nurse, or a friend).
+                Copy your private link and send it to your doctor, a friend, or anyone who already knows the answer.
                 They pick <span className="text-white font-medium">Boy</span> or{' '}
                 <span className="text-white font-medium">Girl</span>, and it stays secret until your big reveal.
               </p>
               <div className="inline-flex flex-col items-stretch gap-4 max-w-full">
               <button
                 className="group relative py-4 px-6 rounded-2xl font-bold bg-gradient-to-r from-slate-100 via-white to-slate-100 text-slate-900 shadow-lg shadow-black/20 hover:shadow-2xl hover:shadow-pink-500/20 transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] overflow-hidden"
-                onClick={() => window.open(`${window.location.origin}/secret/${user.doctorCode}`, '_blank')}
+                onClick={() => copyLink('doctor')}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
                 <span className="relative flex items-center justify-center gap-2.5">
@@ -336,7 +365,7 @@ function Dashboard() {
                     <rect width="14" height="20" x="5" y="2" rx="2.5" />
                     <path d="M12 18h.01" />
                   </svg>
-                  <span className="text-base">Open &amp; hand it over</span>
+                  <span className="text-base">{copied === 'doctor' ? 'Copied — now send it' : 'Copy Secret Keeper link'}</span>
                   <svg
                     className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform"
                     viewBox="0 0 24 24"
@@ -353,11 +382,11 @@ function Dashboard() {
               </button>
               <div>
                 <p className="text-white/45 text-xs text-center mb-2.5">
-                  Not in the same room? Share the link or QR code instead.
+                  Only send this link to the person saving the answer. Your guests get a different link.
                 </p>
                 <div className="flex items-center justify-center gap-3 flex-wrap">
                 <button
-                  onClick={() => copyLink('doctor')}
+                  onClick={() => window.open(getLink('doctor'), '_blank', 'noopener,noreferrer')}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 text-xs font-medium transition-all"
                 >
                   {copied === 'doctor' ? (
@@ -368,7 +397,7 @@ function Dashboard() {
                   ) : (
                     <>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                      Copy link
+                      Open for someone beside me
                     </>
                   )}
                 </button>
@@ -384,7 +413,7 @@ function Dashboard() {
               </div>
 
               <div className="mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-xs text-white/45">
-                <span>Waiting on their pick? This page updates on its own, or</span>
+                <span>Waiting on their pick? Their answer stays hidden. You can</span>
                 <button
                   onClick={handleRefresh}
                   disabled={refreshing}
@@ -562,6 +591,7 @@ function Dashboard() {
                   </div>
                 </button>
 
+                {passwordError && <p role="alert" className="text-red-200 text-sm">{passwordError}</p>}
                 {/* Password (expands from the lock button) */}
                 {showPasswordSection && !passwordEnabled && (
                   <div className="animate-fade-in">
@@ -574,6 +604,7 @@ function Dashboard() {
                     <div className="flex gap-2">
                       <input
                         type="password"
+                        aria-label="Set reveal password"
                         placeholder="Set a password (4+ characters)"
                         value={passwordInput}
                         onChange={(e) => setPasswordInput(e.target.value)}
@@ -608,13 +639,17 @@ function Dashboard() {
                     </span>
                     <button
                       onClick={() => {
+                        setPasswordSaving(true);
+                        setPasswordError('');
                         authService.setRevealPassword(null, false).then((res) => {
                           if (res.success) {
                             setPasswordEnabled(false);
+                            setShowPasswordSection(false);
                             setPasswordInput('');
                           }
-                        });
+                        }).catch(error => setPasswordError(error.message)).finally(() => setPasswordSaving(false));
                       }}
+                      disabled={passwordSaving}
                       className="text-white/50 hover:text-white/80 text-xs font-medium flex-shrink-0"
                     >
                       Remove
@@ -625,6 +660,11 @@ function Dashboard() {
             </div>
           </div>
 
+          <div className="rounded-2xl border border-purple-400/20 bg-purple-500/10 p-5 mb-6">
+            <h2 className="font-semibold mb-2">Try it before the big day</h2>
+            <p className="text-white/60 text-sm mb-4">See a sample reveal. It won’t show or change your real answer.</p>
+            <div className="flex gap-3"><a className="flex-1 text-center rounded-xl border border-blue-400/25 bg-blue-500/10 text-blue-200 py-3 text-sm" href={`/reveal/${user.revealCode}?preview=true&gender=boy`} onClick={event => openPreview(event, 'boy')} target="_blank" rel="noreferrer">Boy preview ↗</a><a className="flex-1 text-center rounded-xl border border-pink-400/25 bg-pink-500/10 text-pink-200 py-3 text-sm" href={`/reveal/${user.revealCode}?preview=true&gender=girl`} onClick={event => openPreview(event, 'girl')} target="_blank" rel="noreferrer">Girl preview ↗</a></div>
+          </div>
           {/* Reveal Settings - Below code cards for better flow */}
           <div className="mb-8">
             <RevealSettings
@@ -713,7 +753,7 @@ function Dashboard() {
           onClick={() => setShowQR(null)}
         >
           <div
-            className="bg-slate-900 rounded-3xl border border-white/10 p-8 max-w-sm w-full shadow-2xl"
+            ref={qrRef} role="dialog" aria-modal="true" aria-label="Share link with QR code" className="bg-slate-900 rounded-3xl border border-white/10 p-5 sm:p-8 max-w-sm w-full shadow-2xl max-h-[90svh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center">
@@ -730,7 +770,7 @@ function Dashboard() {
               <div className="bg-white rounded-2xl p-4 inline-block mb-6">
                 <QRCodeSVG
                   value={getLink(showQR)}
-                  size={200}
+                  size={184}
                   level="H"
                   includeMargin={false}
                 />

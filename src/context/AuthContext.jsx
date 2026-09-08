@@ -20,21 +20,26 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
 
   /**
    * Fetch current user and status
    */
   const fetchUser = useCallback(async () => {
+    setAuthError('');
     try {
       const data = await authService.getMe();
       setUser(data.user);
       setStatus(data.status);
       return data;
     } catch (error) {
-      // Token invalid, clear state
-      authService.logout();
-      setUser(null);
-      setStatus(null);
+      if (error.status === 401) {
+        authService.logout();
+        setUser(null);
+        setStatus(null);
+      } else {
+        setAuthError(error.message);
+      }
       throw error;
     }
   }, []);
@@ -74,7 +79,7 @@ export const AuthProvider = ({ children }) => {
     const data = await authService.login(email, password);
     setUser(data.user);
     // Fetch full status
-    const statusData = await genderService.getMyStatus();
+    const statusData = await genderService.getMyStatus().catch(() => null);
     setStatus(statusData);
     return data;
   };
@@ -86,6 +91,7 @@ export const AuthProvider = ({ children }) => {
     authService.logout();
     setUser(null);
     setStatus(null);
+    setAuthError('');
   };
 
   /**
@@ -102,6 +108,8 @@ export const AuthProvider = ({ children }) => {
     user,
     status,
     loading,
+    authError,
+    retryAuth: async () => { setLoading(true); try { await fetchUser(); } catch { /* Expose authError in the UI. */ } finally { setLoading(false); } },
     isAuthenticated: !!user,
     register,
     login,
