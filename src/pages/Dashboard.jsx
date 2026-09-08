@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
 import RevealSettings from '../components/RevealSettings';
+import RevealModeSelector from '../components/RevealModeSelector';
 import authService from '../api/authService';
 import Footer from '../components/Footer';
 import useDialog from '../hooks/useDialog';
@@ -30,15 +31,8 @@ function Dashboard() {
   const [passwordError, setPasswordError] = useState('');
 
   // Reveal preferences state
-  const [syncedReveal, setSyncedReveal] = useState(false);
+  const [revealModeState, setRevealModeState] = useState({ syncedReveal: false, loading: true });
   const revealSettingsRef = useRef(null);
-
-  // Handle preference changes from RevealSettings
-  const handlePreferencesChange = (newPrefs) => {
-    if (typeof newPrefs.syncedReveal !== 'undefined') {
-      setSyncedReveal(newPrefs.syncedReveal);
-    }
-  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -61,12 +55,6 @@ function Dashboard() {
         if (data.success) {
           setPasswordEnabled(data.enabled);
           setShowPasswordSection(data.enabled);
-        }
-      }).catch(() => {});
-      // Load preferences for synced reveal indicator
-      authService.getPreferences().then((data) => {
-        if (data.preferences) {
-          setSyncedReveal(data.preferences.syncedReveal || false);
         }
       }).catch(() => {});
     }
@@ -472,37 +460,16 @@ function Dashboard() {
 
               {/* Reveal mode + password footer */}
               <div className="mt-2.5 pt-2.5 border-t border-white/10 space-y-2.5">
-                {/* Reveal mode toggle (drives the single source of truth in RevealSettings) */}
-                <button
-                  role="switch"
-                  aria-label="Reveal together with guests"
-                  aria-checked={syncedReveal}
-                  onClick={() => revealSettingsRef.current?.setSyncedReveal(!syncedReveal)}
-                  className={`w-full flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl border transition-all ${
-                    syncedReveal ? 'border-purple-500/40 bg-purple-500/10' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <svg className={`w-4 h-4 flex-shrink-0 ${syncedReveal ? 'text-purple-300' : 'text-white/40'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {syncedReveal ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      )}
-                    </svg>
-                    <div className="text-left min-w-0">
-                      <p className={`text-sm font-medium leading-tight ${syncedReveal ? 'text-white' : 'text-white/75'}`}>
-                        {syncedReveal ? 'Everyone reveals together' : 'Reveal at your own pace'}
-                      </p>
-                      <p className={`text-[11px] leading-tight mt-0.5 ${syncedReveal ? 'text-purple-300/70' : 'text-white/40'}`}>
-                        {syncedReveal ? 'All viewers see it live at the same moment' : 'Each guest controls their own reveal moment'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${syncedReveal ? 'bg-purple-500' : 'bg-white/20'}`}>
-                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${syncedReveal ? 'translate-x-7' : 'translate-x-1'}`} />
-                  </div>
-                </button>
+                <RevealModeSelector
+                  {...revealModeState}
+                  onChange={value => {
+                    if (revealSettingsRef.current?.setSyncedReveal(value)) {
+                      setRevealModeState(previous => ({ ...previous, syncedReveal: value, saveStatus: 'pending', saveError: '' }));
+                    }
+                  }}
+                  onRetry={() => revealSettingsRef.current?.retrySave()}
+                  onReload={() => revealSettingsRef.current?.reload()}
+                />
 
                 {passwordError && <p role="alert" className="text-red-200 text-sm">{passwordError}</p>}
                 {/* Password (expands from the lock button) */}
@@ -584,7 +551,7 @@ function Dashboard() {
               ref={revealSettingsRef}
               isGenderSet={status?.isSet}
               revealCode={user?.revealCode}
-              onPreferencesChange={handlePreferencesChange}
+              onStateChange={setRevealModeState}
             />
           </div>
 
