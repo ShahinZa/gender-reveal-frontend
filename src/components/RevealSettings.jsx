@@ -18,9 +18,9 @@ const INTENSITY_ICONS = {
  * @param {Object} props
  * @param {boolean} props.isGenderSet - Whether the gender has been set
  * @param {string} props.revealCode - The reveal code for preview URLs
- * @param {function} props.onPreferencesChange - Callback when preferences change
+ * @param {function} props.onStateChange - Current selection and save state for the dashboard
  */
-const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false, revealCode, onPreferencesChange }, ref) {
+const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false, revealCode, onStateChange }, ref) {
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [isExpanded, setIsExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,10 +37,16 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
   const saveQueue = useRef(Promise.resolve(true));
   const revision = useRef(0);
   const pending = useRef(null);
-  const onChangeRef = useRef(onPreferencesChange);
-  onChangeRef.current = onPreferencesChange;
+  const onChangeRef = useRef(onStateChange);
+  onChangeRef.current = onStateChange;
   const [loadError, setLoadError] = useState('');
   const [saveError, setSaveError] = useState('');
+
+  // Publish the current local selection immediately. A slower save response
+  // must not replace a newer choice shown in the dashboard.
+  useEffect(() => {
+    onChangeRef.current?.({ syncedReveal: preferences.syncedReveal, loading, loadError, saveStatus, saveError });
+  }, [preferences.syncedReveal, loading, loadError, saveStatus, saveError]);
 
   const fetchPreferences = useCallback(async () => {
     setLoading(true);
@@ -50,7 +56,6 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
       const next = { ...DEFAULT_PREFERENCES, ...data.preferences };
       prefsRef.current = next;
       setPreferences(next);
-      onChangeRef.current?.(next);
     } catch (err) { setLoadError(err.message); }
     finally { setLoading(false); }
   }, []);
@@ -67,7 +72,6 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
     saveQueue.current = saveQueue.current.catch(() => false).then(async () => {
       try {
         await authService.updatePreferences(settings);
-        onChangeRef.current?.(newPrefs);
         if (currentRevision === revision.current) setSaveStatus('saved');
         return true;
       } catch (err) {
@@ -100,8 +104,9 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
   }, [flush]);
 
   const handleChange = useCallback((key, value) => {
-    if (loadError || loading) return;
+    if (loadError || loading) return false;
     updatePreferences({ ...prefsRef.current, [key]: value });
+    return true;
   }, [updatePreferences, loadError, loading]);
 
   useEffect(() => {
@@ -114,8 +119,10 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
 
   useImperativeHandle(ref, () => ({
     setSyncedReveal: value => handleChange('syncedReveal', value),
+    retrySave: () => savePreferences(prefsRef.current),
+    reload: fetchPreferences,
     flush,
-  }), [handleChange, flush]);
+  }), [handleChange, savePreferences, fetchPreferences, flush]);
 
   const openPreview = useCallback(async gender => {
     if (!revealCode) return;
@@ -427,67 +434,6 @@ const RevealSettings = forwardRef(function RevealSettings({ isGenderSet = false,
                 />
               </div>
             </button>
-          </div>
-
-          {/* Synced Reveal Toggle */}
-          <div id="synced-reveal-setting">
-            <label className="block text-white/70 text-sm font-medium mb-3">
-              Live Synced Reveal
-              <span className="ml-2 text-purple-400/80 text-xs font-normal">NEW</span>
-            </label>
-            <button
-              onClick={() => handleChange('syncedReveal', !preferences.syncedReveal)}
-              role="switch" aria-label="Everyone reveals together" aria-checked={preferences.syncedReveal}
-              className={`w-full flex items-center justify-between py-3 px-4 rounded-xl border-2 transition-all ${
-                preferences.syncedReveal
-                  ? 'border-purple-500/50 bg-purple-500/10'
-                  : 'border-white/10 bg-white/5'
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <svg
-                  className={`w-5 h-5 flex-shrink-0 ${preferences.syncedReveal ? 'text-purple-400' : 'text-white/40'}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  {preferences.syncedReveal ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  )}
-                </svg>
-                <div className="text-left">
-                  <span className={preferences.syncedReveal ? 'text-white' : 'text-white/60'}>
-                    {preferences.syncedReveal ? 'Everyone reveals together' : 'Reveal at your own pace'}
-                  </span>
-                  <p className={`text-xs mt-0.5 ${preferences.syncedReveal ? 'text-purple-300/70' : 'text-white/40'}`}>
-                    {preferences.syncedReveal
-                      ? 'When you click reveal, all viewers see it live at the same moment'
-                      : 'Each guest controls their own reveal moment'}
-                  </p>
-                </div>
-              </div>
-              <div
-                className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${
-                  preferences.syncedReveal ? 'bg-purple-500' : 'bg-white/20'
-                }`}
-              >
-                <div
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                    preferences.syncedReveal ? 'translate-x-7' : 'translate-x-1'
-                  }`}
-                />
-              </div>
-            </button>
-            {preferences.syncedReveal && (
-              <p className="text-purple-300/60 text-xs mt-3 flex items-start gap-2">
-                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Perfect for family abroad! Share the reveal link, and when you click "Reveal Now", everyone watching will see the countdown and reveal at the exact same moment.</span>
-              </p>
-            )}
           </div>
 
           {/* Custom Audio Uploads */}

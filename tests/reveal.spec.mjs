@@ -92,6 +92,75 @@ test('guest catches up when a synchronized reveal starts before sound is enabled
   await expect(page.getByRole('heading', { name: 'GIRL!', exact: true })).toBeVisible();
 });
 
+test('reveal mode keeps the latest choice during a slow save and supports keyboard selection', async ({ page, request }) => {
+  const user = await create(request, { syncedReveal: true, theme: 'gold' });
+  await login(page, user);
+  await page.goto('/dashboard');
+  const mode = page.getByRole('group', { name: 'How should guests reveal?' });
+  const together = mode.getByRole('radio', { name: 'Everyone together' });
+  const individual = mode.getByRole('radio', { name: 'At their own pace' });
+  await expect(together).toBeChecked();
+  let releaseFirst, firstSaved;
+  const release = new Promise(resolve => { releaseFirst = resolve; });
+  const saved = new Promise(resolve => { firstSaved = resolve; });
+  let writes = 0;
+  await page.route('**/api/auth/preferences', async route => {
+    if (route.request().method() !== 'PUT') return route.continue();
+    const response = await route.fetch();
+    if (++writes === 1) { firstSaved(); await release; }
+    await route.fulfill({ response });
+  });
+  await individual.check();
+  await expect(individual).toBeChecked();
+  await saved;
+  await expect(mode).toContainText('Saving…');
+  await together.check();
+  await expect(together).toBeChecked();
+  releaseFirst();
+  await expect(mode).toContainText('Saved automatically');
+  await expect(together).toBeChecked();
+  expect((await status(request, user)).preferences.syncedReveal).toBe(true);
+  await page.unroute('**/api/auth/preferences');
+  await page.reload();
+  await expect(together).toBeChecked();
+  await reviewScreenshot(page, 'reveal-mode-together');
+  await together.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(individual).toBeChecked();
+  await expect(mode).toContainText('Saved automatically');
+  const preferences = (await status(request, user)).preferences;
+  expect(preferences.syncedReveal).toBe(false);
+  expect(preferences.theme).toBe('gold');
+  await page.getByRole('button', { name: /Customize The Big Reveal/ }).click();
+  await expect(page.getByRole('radio')).toHaveCount(2);
+  await page.setViewportSize({ width: 320, height: 568 });
+  await noOverflow(page);
+});
+
+test('reveal mode recovers from load and save failures without pretending a change saved', async ({ page, request }) => {
+  const user = await create(request, { syncedReveal: true });
+  await login(page, user);
+  await page.route('**/api/auth/preferences', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Temporarily unavailable"}' }));
+  await page.goto('/dashboard');
+  const mode = page.getByRole('group', { name: 'How should guests reveal?' });
+  await expect(mode).toContainText('Your saved choice couldn’t load.');
+  await expect(mode.getByRole('radio').first()).toBeDisabled();
+  await expect(mode.getByRole('radio').last()).toBeDisabled();
+  await page.unroute('**/api/auth/preferences');
+  await mode.getByRole('button', { name: 'Load again' }).click();
+  await expect(mode.getByRole('radio', { name: 'Everyone together' })).toBeChecked();
+  await page.route('**/api/auth/preferences', route => route.request().method() === 'PUT' ? route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Could not save"}' }) : route.continue());
+  await mode.getByRole('radio', { name: 'At their own pace' }).check();
+  await expect(mode).toContainText('Your changes haven’t saved.');
+  expect((await status(request, user)).preferences.syncedReveal).toBe(true);
+  await page.unroute('**/api/auth/preferences');
+  await mode.getByRole('button', { name: 'Try saving again' }).click();
+  await expect(mode).toContainText('Saved automatically');
+  expect((await status(request, user)).preferences.syncedReveal).toBe(false);
+  await page.reload();
+  await expect(mode.getByRole('radio', { name: 'At their own pace' })).toBeChecked();
+});
+
 test('home explains the two links, and both demos can be played and closed', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Keep the secret/ })).toBeVisible();
