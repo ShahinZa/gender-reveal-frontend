@@ -148,8 +148,8 @@ function Home() {
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-[1.12] tracking-tight mb-6">Keep the secret.<span className="block mt-2 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">Share the surprise.</span></h1>
               <p className="text-white/70 text-base sm:text-lg leading-relaxed max-w-lg">A free online gender reveal. Someone you trust saves the answer in secret. You and your loved ones discover it with a countdown and a shower of confetti.</p>
               <div className="flex flex-col sm:flex-row gap-3 mt-8">
-                <button onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth')} className="bg-white text-slate-900 rounded-full py-4 px-6 font-semibold hover:bg-white/90 shadow-lg shadow-purple-500/10">{isAuthenticated ? 'Open my reveal' : 'Create my free reveal'} <span aria-hidden="true">↗</span></button>
-                <a href="#try-reveal" className="rounded-full py-4 px-6 border border-white/20 text-white/85 hover:bg-white/5 text-center">Try a demo first <span aria-hidden="true">↓</span></a>
+                <button onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth')} className="bg-white text-slate-900 rounded-full py-4 px-6 font-semibold hover:bg-white/90 shadow-lg shadow-purple-500/10">{isAuthenticated ? 'Open my reveal' : 'Create my free reveal'}</button>
+                <a href="#try-reveal" className="rounded-full py-4 px-6 border border-white/20 text-white/85 hover:bg-white/5 text-center">Try a demo first</a>
               </div>
               <p className="text-white/50 text-xs leading-relaxed mt-4">No payment needed · Your guests don’t need an account</p>
             </div>

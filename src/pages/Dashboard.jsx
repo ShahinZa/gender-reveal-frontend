@@ -663,7 +663,7 @@ function Dashboard() {
           <div className="rounded-2xl border border-purple-400/20 bg-purple-500/10 p-5 mb-6">
             <h2 className="font-semibold mb-2">Try it before the big day</h2>
             <p className="text-white/60 text-sm mb-4">See a sample reveal. It won’t show or change your real answer.</p>
-            <div className="flex gap-3"><a className="flex-1 text-center rounded-xl border border-blue-400/25 bg-blue-500/10 text-blue-200 py-3 text-sm" href={`/reveal/${user.revealCode}?preview=true&gender=boy`} onClick={event => openPreview(event, 'boy')} target="_blank" rel="noreferrer">Boy preview ↗</a><a className="flex-1 text-center rounded-xl border border-pink-400/25 bg-pink-500/10 text-pink-200 py-3 text-sm" href={`/reveal/${user.revealCode}?preview=true&gender=girl`} onClick={event => openPreview(event, 'girl')} target="_blank" rel="noreferrer">Girl preview ↗</a></div>
+            <div className="flex gap-3"><a className="flex-1 text-center rounded-xl border border-blue-400/25 bg-blue-500/10 text-blue-200 py-3 text-sm" href={`/reveal/${user.revealCode}?preview=true&gender=boy`} onClick={event => openPreview(event, 'boy')} target="_blank" rel="noreferrer">Boy preview</a><a className="flex-1 text-center rounded-xl border border-pink-400/25 bg-pink-500/10 text-pink-200 py-3 text-sm" href={`/reveal/${user.revealCode}?preview=true&gender=girl`} onClick={event => openPreview(event, 'girl')} target="_blank" rel="noreferrer">Girl preview</a></div>
           </div>
           {/* Reveal Settings - Below code cards for better flow */}
           <div className="mb-8">
